@@ -27,8 +27,8 @@ p{margin:0 0 8px}
 .help{color:var(--mut);font-size:13px}
 label{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
 label small{font-weight:400;color:var(--mut)}
-input[type=text],input[type=tel],input[type=email],input[type=password]{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-input:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+select,input[type=text],input[type=tel],input[type=email],input[type=password]{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+select:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .f{margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .grid .f{margin:0;min-width:0}
@@ -82,10 +82,10 @@ tr.det td{white-space:normal;background:var(--bg)}
 </head><body>
 <div class="band"><div class="in">
   <h1>Diagnóstico de Indicadores da Indústria</h1>
-  <p class="sub">Calcule os principais indicadores comerciais, de produção e de pessoas e receba um plano de ação para os próximos 90 dias.</p>
+  <p class="sub">Responda perguntas simples sobre vendas e produção. O diagnóstico calcula os indicadores para você e entrega um plano de ação para vender mais e produzir melhor nos próximos 90 dias.</p>
   <div class="tabs" id="tabs">
     <button type="button" id="t-ident" class="on">1 · Seus dados</button>
-    <button type="button" id="t-dados" disabled>2 · Números do mês</button>
+    <button type="button" id="t-dados" disabled>2 · Suas respostas</button>
     <button type="button" id="t-rel" disabled>3 · Relatório</button>
   </div>
 </div></div>
@@ -108,7 +108,7 @@ tr.det td{white-space:normal;background:var(--bg)}
 </section>
 
 <section id="v-dados" hidden>
-  <div class="note">Use os números de <b>um mês</b> de operação (o mais recente e representativo). Se algum item não existe na sua empresa, deixe em branco. Valores em reais podem ser digitados como 450000 ou 450.000,00.</div>
+  <div class="note"><b>Como responder:</b> escolha um <b>mês normal e recente</b> (evite mês de férias coletivas ou de greve). Você só informa números simples, como quantidades, horas e valores; o diagnóstico faz as contas. <b>Não precisa ser exato:</b> uma boa estimativa já serve. Se não souber uma resposta, deixe em branco e continue. Valores em reais podem ser digitados como 450000 ou 450.000,00.</div>
   <div id="grupos"></div>
   <div class="row"><button type="button" id="gerar">Gerar meu diagnóstico</button><button type="button" id="voltar-ident" class="sec">Voltar</button><button type="button" id="limpar" class="sec">Limpar números</button></div>
   <div id="e-dados" class="err" hidden></div>
@@ -136,7 +136,7 @@ tr.det td{white-space:normal;background:var(--bg)}
 'use strict';
 var CFG=Object.assign({url:'',anon:'',ia:true},window.DIAG_CONFIG||{});
 var live=!!(CFG.url&&CFG.anon);
-var KEY='diag-ind-v1',KADM='diag-ind-adm-v1';
+var KEY='diag-ind-v2',KADM='diag-ind-adm-v1';
 var $=function(i){return document.getElementById(i)};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 var nf=function(n,d){return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n)};
@@ -146,38 +146,40 @@ var dig=function(s){return String(s||'').replace(/\D/g,'')};
 function div(a,b){return(a!=null&&b!=null&&b>0)?a/b:null}
 
 /* ---------- campos ---------- */
+var SEM=4.33; /* semanas em um mês médio */
 var F=[
-{id:'com',t:'Comercial',intro:'Números de vendas e clientes no mês.',f:[
- {k:'fat',l:'Faturamento do mês',h:'Soma das vendas do mês, em reais.',u:'brl'},
- {k:'ped',l:'Número de pedidos (tickets)',h:'Quantos pedidos foram fechados.',u:'int'},
- {k:'pec',l:'Peças vendidas',h:'Quantidade total de peças ou unidades vendidas.',u:'int'},
- {k:'orc',l:'Solicitações de orçamento',h:'Quantos clientes pediram orçamento ou procuraram a empresa.',u:'int'},
- {k:'cini',l:'Clientes ativos no início do mês',h:'Carteira no primeiro dia.',u:'int'},
- {k:'cfim',l:'Clientes ativos no fim do mês',h:'Carteira no último dia.',u:'int'},
- {k:'cnov',l:'Clientes novos no mês',h:'Quantos entraram na carteira neste mês.',u:'int'},
- {k:'vmax',l:'Venda do representante que mais vendeu',h:'Em reais, no mês.',u:'brl'},
- {k:'vmin',l:'Venda do representante que menos vendeu',h:'Em reais, no mês.',u:'brl'}]},
-{id:'pro',t:'Produção',intro:'Números da fábrica no mês, somando todas as máquinas ou a linha principal. Tempos em minutos.',f:[
- {k:'pplan',l:'Produção planejada',h:'Peças que deveriam ser produzidas.',u:'int'},
- {k:'preal',l:'Produção real',h:'Peças efetivamente produzidas.',u:'int'},
- {k:'pteo',l:'Capacidade teórica',h:'Peças que as máquinas produziriam no tempo produtivo, na velocidade ideal.',u:'int'},
- {k:'pboa',l:'Peças boas',h:'Peças aprovadas, sem defeito e sem retrabalho.',u:'int'},
- {k:'tdisp',l:'Tempo disponível (minutos)',h:'Horas de trabalho programadas, em minutos.',u:'int'},
- {k:'tprod',l:'Tempo em produção (minutos)',h:'Tempo em que a máquina esteve produzindo.',u:'int'},
- {k:'tpar',l:'Tempo parado por falha (minutos)',h:'Paradas não programadas por quebra ou defeito.',u:'int'},
- {k:'nfal',l:'Número de falhas',h:'Quantas vezes parou por falha. Se não houve, digite 0.',u:'int'},
- {k:'lead',l:'Lead time médio (dias)',h:'Do registro do pedido até a entrega ao cliente.',u:'dec'}]},
-{id:'pes',t:'Pessoas',intro:'Equipe da fábrica no mês.',f:[
- {k:'colab',l:'Número de colaboradores',h:'Total da equipe.',u:'int'},
- {k:'adm',l:'Admissões no mês',h:'Quantas pessoas entraram.',u:'int'},
- {k:'dem',l:'Demissões no mês',h:'Quantas pessoas saíram.',u:'int'},
- {k:'hperd',l:'Horas perdidas por faltas',h:'Soma das horas de falta no mês.',u:'int'},
- {k:'hprev',l:'Horas de trabalho previstas',h:'Soma das horas que a equipe deveria trabalhar no mês.',u:'int'},
- {k:'htre',l:'Horas de treinamento no mês',h:'Total de horas de treinamento da equipe.',u:'int'}]}
+{id:'com',t:'1. Vendas',intro:'Pense em um mês normal e recente. Os números de vendas ficam no seu sistema, nas notas fiscais ou na planilha de orçamentos.',f:[
+ {k:'orc',l:'Quantos pedidos de orçamento você recebeu no mês?',h:'Conte todo cliente que pediu preço, por telefone, WhatsApp, e-mail ou visita.',x:'320',u:'int'},
+ {k:'ped',l:'Desses, quantos orçamentos foram fechados (viraram venda)?',h:'Conte os orçamentos que o cliente aprovou e comprou.',x:'96',u:'int'},
+ {k:'fat',l:'Quanto você faturou no mês (em reais)?',h:'Some o valor de todas as vendas do mês.',x:'450000',u:'brl'},
+ {k:'cA',l:'Quantos clientes diferentes compraram de você no ano passado?',h:'Considere os 12 meses anteriores aos últimos 12 meses. Se a empresa é nova, deixe em branco.',x:'180',u:'int'},
+ {k:'cB',l:'Desses clientes, quantos voltaram a comprar nos últimos 12 meses?',h:'Conte só os que estavam na pergunta anterior e compraram de novo.',x:'126',u:'int'},
+ {k:'vmax',l:'Quanto o vendedor que mais vendeu faturou no mês (em reais)?',h:'Se você vende sozinho ou tem só um vendedor, deixe em branco.',x:'210000',u:'brl'},
+ {k:'vmin',l:'Quanto o vendedor que menos vendeu faturou no mês (em reais)?',h:'Mesma regra da pergunta anterior.',x:'130000',u:'brl'}]},
+{id:'tem',t:'2. Horas de trabalho das máquinas',intro:'Aqui descobrimos quanto tempo suas máquinas poderiam produzir e quanto realmente produzem. Responda pensando nas máquinas que fazem seus produtos, mesmo que sejam de tipos diferentes.',calc:true,f:[
+ {k:'nmaq',l:'Quantas máquinas de produção você tem funcionando?',h:'Conte as máquinas principais que fazem seu produto. Não conte ferramentas manuais.',x:'8',u:'int'},
+ {k:'hdia',l:'Quantas horas por dia a fábrica trabalha?',h:'Desconte o almoço e as pausas. Se trabalha das 7h às 16h com 1 hora de almoço, são 8 horas.',x:'8',u:'dec'},
+ {k:'dsem',l:'Quantos dias por semana a fábrica trabalha?',h:'Escolha de 1 a 7. Se trabalha de segunda a sexta, são 5.',x:'5',u:'sel'},
+ {k:'hpar',l:'Quantas horas as máquinas ficaram paradas por quebra no mês?',h:'Some todas as paradas por defeito ou conserto, de todas as máquinas. Estimativa serve. Se não houve, digite 0.',x:'60',u:'dec'},
+ {k:'nfal',l:'Quantas vezes uma máquina quebrou ou parou por defeito no mês?',h:'Conte cada parada como uma vez. Se não houve, digite 0.',x:'8',u:'int'},
+ {k:'hout',l:'Quantas horas as máquinas ficaram paradas por outros motivos no mês?',h:'Troca de produto ou ferramenta, falta de material, falta de operador, espera por liberação. Some todas as máquinas. Dica: horas perdidas por dia × dias trabalhados no mês.',x:'260',u:'dec'}]},
+{id:'qua',t:'3. Qualidade e entregas',intro:'Mostra quanto do que você produz sai certo e quanto sai no prazo prometido ao cliente.',f:[
+ {k:'pprod',l:'Quantas peças ou unidades você produziu no mês?',h:'Some tudo o que saiu das máquinas, de todos os produtos.',x:'8500',u:'int'},
+ {k:'pruim',l:'Dessas, quantas foram jogadas fora ou tiveram que ser refeitas?',h:'Some as peças com defeito (refugo) e as que voltaram para conserto (retrabalho). Se não houve, digite 0.',x:'570',u:'int'},
+ {k:'oprog',l:'Quantos pedidos tinham entrega prometida para este mês?',h:'Conte os pedidos cujo prazo de entrega caiu no mês.',x:'120',u:'int'},
+ {k:'oprazo',l:'Desses, quantos foram entregues dentro do prazo prometido?',h:'Pedidos entregues no dia combinado ou antes.',x:'96',u:'int'}]},
+{id:'lea',t:'4. Prazo de entrega',intro:'Pegue os últimos pedidos que você entregou. Para cada um, conte quantos dias se passaram entre o dia em que o cliente fechou o pedido e o dia em que ele recebeu. Preencha pelo menos 3 pedidos; o diagnóstico calcula a média.',f:[
+ {k:'l1',l:'Pedido 1: quantos dias do pedido até a entrega?',h:'Conte os dias corridos no calendário.',x:'9',u:'dec'},
+ {k:'l2',l:'Pedido 2: quantos dias?',h:'',x:'7',u:'dec'},
+ {k:'l3',l:'Pedido 3: quantos dias?',h:'',x:'12',u:'dec'},
+ {k:'l4',l:'Pedido 4: quantos dias? (opcional)',h:'',x:'6',u:'dec'},
+ {k:'l5',l:'Pedido 5: quantos dias? (opcional)',h:'',x:'8',u:'dec'}]},
+{id:'eqp',t:'5. Equipe nos últimos 12 meses',intro:'Só três números, olhando o último ano inteiro, para medir a rotatividade (entra e sai de gente).',f:[
+ {k:'colab',l:'Quantos colaboradores trabalham na empresa hoje?',h:'Conte a equipe inteira, fábrica e escritório.',x:'42',u:'int'},
+ {k:'adm12',l:'Quantas pessoas foram contratadas nos últimos 12 meses?',h:'Some todas as admissões do último ano.',x:'14',u:'int'},
+ {k:'dem12',l:'Quantas pessoas saíram nos últimos 12 meses?',h:'Some demissões e pedidos de demissão do último ano.',x:'12',u:'int'}]}
 ];
-var EXEMPLO={fat:'450000',ped:'60',pec:'2100',orc:'320',cini:'500',cfim:'540',cnov:'60',vmax:'210000',vmin:'130000',
- pplan:'8700',preal:'8500',pteo:'12000',pboa:'7930',tdisp:'9520',tprod:'6940',tpar:'240',nfal:'8',lead:'7',
- colab:'42',adm:'3',dem:'2',hperd:'190',hprev:'7400',htre:'70'};
+var EXEMPLO={};F.forEach(function(g){g.f.forEach(function(f){EXEMPLO[f.k]=f.x})});
 
 function parseNum(s){
   if(s==null)return null;s=String(s).replace(/R\$|\s/g,'');if(s==='')return null;
@@ -187,39 +189,46 @@ function parseNum(s){
 }
 
 /* ---------- cálculo ---------- */
+function tempoMin(d){ /* minutos que as máquinas poderiam trabalhar no mês */
+  if(d.nmaq>0&&d.hdia>0&&d.dsem>0)return d.nmaq*d.hdia*d.dsem*SEM*60;
+  return null;
+}
 function compute(raw){
   var d={};Object.keys(raw).forEach(function(k){d[k]=parseNum(raw[k])});
   var R={};
-  R.tmv=div(d.fat,d.ped);R.pm=div(d.fat,d.pec);R.tc=div(d.ped,d.orc);
-  R.tr=(d.cfim!=null&&d.cnov!=null&&d.cini>0)?(d.cfim-d.cnov)/d.cini:null;
+  d.tdisp=tempoMin(d);
+  var ls=['l1','l2','l3','l4','l5'].map(function(k){return d[k]}).filter(function(v){return v!=null});
+  d.nlead=ls.length;
+  d.lead=ls.length>=1?ls.reduce(function(a,b){return a+b},0)/ls.length:null;
+  R.tmv=div(d.fat,d.ped);R.tc=div(d.ped,d.orc);
+  R.tr=div(d.cB,d.cA);
   R.te=div(d.vmin,d.vmax);
-  R.efi=div(d.preal,d.pplan);R.uti=div(d.tprod,d.tdisp);
-  R.disp=(d.tdisp>0&&d.tpar!=null)?(d.tdisp-d.tpar)/d.tdisp:null;
-  R.perf=div(d.preal,d.pteo);R.qual=div(d.pboa,d.preal);
-  R.oee=(R.disp!=null&&R.perf!=null&&R.qual!=null)?R.disp*R.perf*R.qual:null;
-  R.quebra=(d.tdisp>0&&d.tpar!=null)?d.tpar/d.tdisp:null;
-  R.mtbf=(d.nfal>0&&d.tprod!=null)?d.tprod/d.nfal:null;
-  R.lead=d.lead;
-  R.turn=(d.colab>0&&d.adm!=null&&d.dem!=null)?((d.adm+d.dem)/2)/d.colab:null;
-  R.abs=div(d.hperd,d.hprev);
-  R.prod=div(d.preal,d.colab);
-  R.trein=(d.colab>0&&d.htre!=null)?d.htre/d.colab*12:null;
+  if(d.tdisp!=null&&d.hpar!=null){
+    d.tpar=d.hpar*60;
+    R.disp=Math.max(0,(d.tdisp-d.tpar)/d.tdisp);
+    if(d.hout!=null){d.tprod=d.tdisp-d.tpar-d.hout*60;R.uti=Math.max(0,d.tprod/d.tdisp);
+      if(d.nfal>0&&d.tprod>0)R.mtbf=d.tprod/d.nfal}
+  }
+  R.qual=(d.pprod>0&&d.pruim!=null)?Math.max(0,1-d.pruim/d.pprod):null;
+  R.prazo=div(d.oprazo,d.oprog);
+  R.lead=(d.lead!=null&&d.nlead>=1)?d.lead:null;
+  R.turn=(d.colab>0&&d.adm12!=null&&d.dem12!=null)?((d.adm12+d.dem12)/2)/d.colab:null;
   return {d:d,R:R};
 }
 function warnings(d,R){
   var w=[];
-  if(d.tpar>d.tdisp)w.push('O tempo parado por falha é maior que o tempo disponível.');
-  if(d.tprod>d.tdisp)w.push('O tempo em produção é maior que o tempo disponível.');
-  if(d.tprod!=null&&d.tpar!=null&&d.tdisp!=null&&d.tprod+d.tpar>d.tdisp)w.push('Tempo em produção somado ao tempo parado passa do tempo disponível.');
-  if(d.pboa>d.preal)w.push('As peças boas são mais que a produção real.');
-  if(d.preal>d.pteo)w.push('A produção real passa da capacidade teórica. Confira se a capacidade informada está correta.');
-  if(d.cnov>d.cfim)w.push('Os clientes novos são mais que os clientes ativos no fim do mês.');
-  if(d.vmin>d.vmax)w.push('O representante que menos vendeu aparece com venda maior que o que mais vendeu.');
-  if(R.tc!=null&&R.tc>1)w.push('Há mais pedidos que solicitações de orçamento ('+pctf(R.tc)+' de conversão). Confira os dois números.');
-  if(d.hperd>d.hprev)w.push('As horas perdidas por faltas passam das horas previstas.');
-  if(d.nfal>0&&d.tpar===0)w.push('Foram informadas falhas, mas o tempo parado por falha está zerado.');
-  if(d.lead!=null&&d.lead>365)w.push('O lead time passa de 365 dias. Confira se está em dias.');
-  if(d.pplan!=null&&d.preal!=null&&d.pplan>0&&d.preal/d.pplan>1.3)w.push('A produção real está 30% acima da planejada. Confira os dois números.');
+  if(d.hdia>24)w.push('Horas por dia acima de 24. Confira a resposta.');
+  if(d.dsem>7)w.push('Dias por semana acima de 7. Escolha de 1 a 7.');
+  if(d.tdisp!=null&&d.hpar!=null&&d.hout!=null&&(d.hpar+d.hout)*60>d.tdisp)w.push('As horas paradas (quebra mais outros motivos) passam do tempo total de trabalho das máquinas ('+nf(d.tdisp/60,0)+' horas no mês). Confira as respostas da etapa 2.');
+  else if(d.tdisp!=null&&d.hpar!=null&&d.hpar*60>d.tdisp)w.push('As horas paradas por quebra passam do tempo total de trabalho das máquinas ('+nf(d.tdisp/60,0)+' horas no mês).');
+  if(d.nfal>0&&d.hpar===0)w.push('Você informou quebras, mas as horas paradas por quebra estão zeradas.');
+  if(d.pruim>d.pprod)w.push('As peças perdidas ou refeitas são mais que as peças produzidas.');
+  if(d.ped>d.orc)w.push('Há mais orçamentos fechados que pedidos de orçamento ('+pctf(R.tc)+' de conversão). Confira os dois números.');
+  if(d.cB>d.cA)w.push('Os clientes que voltaram são mais que os clientes do ano passado.');
+  if(d.vmin>d.vmax)w.push('O vendedor que menos vendeu aparece com venda maior que o que mais vendeu.');
+  if(d.oprazo>d.oprog)w.push('Os pedidos entregues no prazo são mais que os pedidos com entrega prevista.');
+  if(d.lead!=null&&d.lead>365)w.push('O prazo médio de entrega passa de 365 dias. Confira se está em dias.');
+  if(d.nlead!=null&&d.nlead>0&&d.nlead<3)w.push('Só '+d.nlead+' pedido(s) informado(s) no prazo de entrega. Com 3 ou mais a média fica mais confiável.');
   return w;
 }
 
@@ -227,24 +236,17 @@ function warnings(d,R){
 var SRC={n:'Nakajima (TPM)',d:'Apresentação do programa',w:'referência de trabalho, ajuste ao seu setor'};
 var fpp=function(v){return nf(v,0)+' h/ano'};
 var IND=[
-{k:'oee',g:'Produção',n:'OEE (eficácia global do equipamento)',f:pctf,dir:'up',good:.85,warn:.60,src:'n',ref:'85% ou mais é classe mundial; cerca de 60% é a média típica',d:'Mostra, em um número só, quanto da capacidade das máquinas virou peça boa. É disponibilidade × performance × qualidade.'},
-{k:'disp',g:'Produção',n:'Disponibilidade',f:pctf,dir:'up',good:.90,warn:.80,src:'n',ref:'90% ou mais',pb:'manut',step:.05,d:'Percentual do tempo em que o equipamento esteve apto a operar, sem paradas por falha.'},
-{k:'perf',g:'Produção',n:'Performance',f:pctf,dir:'up',good:.95,warn:.80,src:'n',ref:'95% ou mais',pb:'perf',step:.05,d:'Quanto foi produzido em relação ao máximo que o equipamento poderia produzir.'},
-{k:'qual',g:'Produção',n:'Qualidade',f:pctf,dir:'up',good:.99,warn:.95,src:'n',ref:'99% ou mais',pb:'qual',step:.02,d:'Percentual de peças boas, sem defeito e sem retrabalho.'},
-{k:'efi',g:'Produção',n:'Eficiência de produção',f:pctf,dir:'up',good:.95,warn:.85,src:'w',ref:'95% ou mais',pb:'plan',step:.05,d:'Quanto da produção planejada foi realmente produzida.'},
-{k:'uti',g:'Produção',n:'Utilização de máquinas',f:pctf,dir:'up',good:.85,warn:.70,src:'w',ref:'85% ou mais',pb:'uti',step:.05,d:'Percentual do tempo disponível em que a máquina esteve produzindo.'},
-{k:'quebra',g:'Produção',n:'Taxa de quebra de equipamento',f:pctf,dir:'down',good:.05,warn:.10,src:'w',ref:'até 5%',pb:'manut',step:.02,d:'Percentual do tempo disponível em que a máquina ficou parada por falha.'},
-{k:'mtbf',g:'Produção',n:'MTBF (tempo médio entre falhas)',f:function(v){return v>=120?nf(v/60,1)+' horas':nf(v,0)+' minutos'},dir:null,d:'Tempo médio que o equipamento trabalha entre uma falha e outra. Quanto maior, mais confiável.',ref:'sem faixa fixa: compare mês a mês'},
-{k:'lead',g:'Produção',n:'Lead time',f:function(v){return nf(v,1)+' dias'},dir:null,pb:'lead',d:'Tempo total do pedido, do registro até a entrega ao cliente.',ref:'sem faixa fixa: depende do produto'},
-{k:'tmv',g:'Comercial',n:'Ticket médio de vendas (TMV)',f:brl,dir:null,d:'Valor médio de cada pedido.',ref:'sem faixa fixa: compare mês a mês'},
-{k:'pm',g:'Comercial',n:'Preço médio (PM)',f:brl,dir:null,d:'Valor médio de cada peça vendida.',ref:'sem faixa fixa: compare mês a mês'},
-{k:'tc',g:'Comercial',n:'Taxa de conversão',f:pctf,dir:null,pb:'conv',d:'De cada 100 solicitações de orçamento, quantas viram pedido.',ref:'sem faixa fixa: compare mês a mês'},
-{k:'tr',g:'Comercial',n:'Taxa de retenção',f:pctf,dir:'up',good:.90,warn:.80,src:'w',ref:'90% ou mais',pb:'ret',step:.05,d:'Percentual da carteira inicial que continua ativa no fim do mês, sem contar os clientes novos.'},
-{k:'te',g:'Comercial',n:'Taxa de equilíbrio da equipe comercial',f:pctf,dir:'up',good:.70,warn:.50,src:'d',ref:'70% ou mais (o último não fica abaixo de 70% do primeiro)',pb:'eq',step:.05,d:'Venda de quem menos vendeu dividida pela de quem mais vendeu.'},
-{k:'turn',g:'Pessoas',n:'Rotatividade (turnover)',f:pctf,dir:'down',good:.02,warn:.04,src:'w',ref:'até 2% no mês',pb:'turn',step:.01,d:'Média entre admissões e demissões dividida pelo total de colaboradores.'},
-{k:'abs',g:'Pessoas',n:'Absenteísmo',f:pctf,dir:'down',good:.03,warn:.05,src:'w',ref:'até 3%',pb:'abs',step:.01,d:'Horas perdidas por faltas em relação às horas previstas de trabalho.'},
-{k:'trein',g:'Pessoas',n:'Horas de treinamento por colaborador',f:fpp,dir:'up',good:24,warn:12,src:'d',ref:'24 h/ano ou mais (média da indústria brasileira)',pb:'trein',step:6,d:'Horas de treinamento por pessoa, projetadas para o ano (mês × 12).'},
-{k:'prod',g:'Pessoas',n:'Produtividade da equipe',f:function(v){return nf(v,1)+' peças por pessoa'},dir:null,d:'Produção real dividida pelo número de colaboradores.',ref:'sem faixa fixa: compare mês a mês'}
+{k:'disp',g:'Produção',n:'Disponibilidade das máquinas',f:pctf,dir:'up',good:.90,warn:.80,src:'n',ref:'90% ou mais',pb:'manut',step:.05,d:'Do tempo em que as máquinas deveriam trabalhar, quanto não foi perdido com quebra.'},
+{k:'uti',g:'Produção',n:'Utilização das máquinas',f:pctf,dir:'up',good:.85,warn:.70,src:'w',ref:'85% ou mais',pb:'uti',step:.05,d:'Do tempo em que as máquinas deveriam trabalhar, quanto elas realmente ficaram produzindo (sem quebra, troca, espera ou falta de material).'},
+{k:'qual',g:'Produção',n:'Qualidade (peças boas)',f:pctf,dir:'up',good:.99,warn:.95,src:'n',ref:'99% ou mais',pb:'qual',step:.02,d:'De cada 100 peças produzidas, quantas saíram boas, sem precisar jogar fora nem refazer.'},
+{k:'prazo',g:'Produção',n:'Entregas no prazo',f:pctf,dir:'up',good:.95,warn:.85,src:'w',ref:'95% ou mais',pb:'plan',step:.05,d:'Dos pedidos com entrega prometida para o mês, quantos saíram dentro do prazo.'},
+{k:'mtbf',g:'Produção',n:'Tempo médio entre quebras (MTBF)',f:function(v){return v>=120?nf(v/60,1)+' horas':nf(v,0)+' minutos'},dir:null,d:'Tempo médio que as máquinas trabalham entre uma quebra e a seguinte. Quanto maior, mais confiável.',ref:'sem faixa fixa: compare mês a mês'},
+{k:'lead',g:'Produção',n:'Prazo médio de entrega (lead time)',f:function(v){return nf(v,1)+' dias'},dir:null,pb:'lead',d:'Tempo médio entre o cliente fechar o pedido e receber o produto.',ref:'sem faixa fixa: depende do produto'},
+{k:'tc',g:'Comercial',n:'Conversão de orçamentos em vendas',f:pctf,dir:null,pb:'conv',d:'De cada 100 pedidos de orçamento, quantos viram venda.',ref:'sem faixa fixa: compare mês a mês'},
+{k:'tmv',g:'Comercial',n:'Valor médio por venda (ticket médio)',f:brl,dir:null,pb:'tmv',d:'Faturamento dividido pelo número de orçamentos fechados.',ref:'sem faixa fixa: compare mês a mês'},
+{k:'tr',g:'Comercial',n:'Clientes que voltaram a comprar (retenção)',f:pctf,dir:'up',good:.80,warn:.60,src:'w',ref:'80% ou mais ao ano',pb:'ret',step:.05,d:'Dos clientes que compraram no ano passado, quantos voltaram a comprar nos últimos 12 meses.'},
+{k:'te',g:'Comercial',n:'Equilíbrio entre vendedores',f:pctf,dir:'up',good:.70,warn:.50,src:'d',ref:'70% ou mais (o que menos vende não fica abaixo de 70% do que mais vende)',pb:'eq',step:.05,d:'Venda de quem menos vendeu dividida pela de quem mais vendeu.'},
+{k:'turn',g:'Equipe',n:'Rotatividade da equipe (12 meses)',f:pctf,dir:'down',good:.24,warn:.48,src:'w',ref:'até 24% ao ano',pb:'turn',step:.06,d:'Média entre contratações e saídas dos últimos 12 meses, dividida pela equipe de hoje.'}
 ];
 var BYK={};IND.forEach(function(i){BYK[i.k]=i});
 function status(i,v){
@@ -263,30 +265,31 @@ var PB={
 manut:{t:'Manutenção e paradas por falha',dicas:['Liste as 5 máquinas que mais pararam no mês e o motivo de cada parada. Comece o plano por elas.','Crie um plano de manutenção preventiva por equipamento (limpeza, lubrificação e inspeção) com data e responsável, e cumpra antes de a falha acontecer.','Peça ao operador uma inspeção simples no início do turno (ruídos, vazamentos, folgas) e registre. Essa rotina faz parte do TPM (manutenção produtiva total).','Mantenha em estoque as peças de reposição das paradas que mais se repetem.','Registre cada falha com data, hora, duração e causa. Sem esse registro o MTBF e a taxa de quebra ficam imprecisos.'],ac:'Tempo parado por falha e número de falhas, toda semana.'},
 perf:{t:'Velocidade de operação (performance)',dicas:['Confirme se a capacidade teórica informada está correta (do fabricante ou de um teste), pois ela define a performance.','Registre as microparadas, que são paradas curtas de poucos minutos por falta de material, ajuste ou espera. Somadas, costumam pesar mais que uma quebra.','Reduza o tempo de setup (troca de produto ou ferramenta) preparando o que for possível com a máquina ainda rodando. Essa técnica se chama SMED.','Padronize a velocidade de trabalho por produto e treine os operadores no melhor ajuste conhecido.','Abasteça a linha antes de o material acabar, com um responsável definido.'],ac:'Peças por hora de cada máquina, comparadas com a capacidade teórica.'},
 qual:{t:'Qualidade (peças boas)',dicas:['Registre o refugo (peça perdida) e o retrabalho (peça refeita) por causa e por turno.','Ataque primeiro as 2 ou 3 causas que mais se repetem. Um gráfico de Pareto simples mostra quais são.','Inspecione as primeiras peças de cada lote antes de produzir a quantidade total.','Padronize o ajuste da máquina por produto em uma ficha de ajuste e deixe à vista do operador.','Confira a matéria-prima na entrada e converse com o fornecedor sobre os defeitos que se repetem.'],ac:'Percentual de peças boas por turno e as 3 principais causas de defeito.'},
-plan:{t:'Cumprimento do planejado',dicas:['Revise se a meta diária é realista, considerando paradas programadas, setup e intervalos.','Faça uma reunião de 10 minutos no início do turno para alinhar a meta e os materiais disponíveis.','Garanta material, ferramenta e ordem de produção disponíveis antes de o turno começar.','Registre por hora o previsto e o realizado para ver em que horário o desvio acontece.','Quando não cumprir a meta, anote o motivo principal do desvio.'],ac:'Produção prevista e realizada por turno, com o motivo do desvio.'},
-uti:{t:'Uso do tempo das máquinas',dicas:['Separe o tempo sem produção em categorias: setup, falta de material, falta de operador, manutenção e espera por liberação.','Escalone os intervalos para a máquina não parar na troca de turno ou no almoço, quando o processo permitir.','Programe a produção agrupando produtos parecidos para reduzir trocas.','Defina quem repõe o material e quem libera a primeira peça, para não haver espera.','Confira se o tempo disponível informado considera apenas o horário de trabalho previsto.'],ac:'Minutos produzindo e minutos parados por motivo, toda semana.'},
-conv:{t:'Conversão de orçamentos em pedidos',dicas:['Entregue o orçamento no mesmo dia, com preço, prazo de entrega e condições de pagamento claros.','Faça retorno em até 2 dias úteis para cada orçamento não fechado e pergunte o que faltou.','Registre o motivo de cada orçamento perdido (preço, prazo, especificação, concorrente) e revise a lista toda semana.','Qualifique a demanda antes de orçar: volume, prazo, especificação técnica e forma de pagamento.','Mantenha preços e prazos de referência dos itens mais pedidos para responder mais rápido.'],ac:'Solicitações, orçamentos enviados e pedidos fechados por semana.'},
+plan:{t:'Entregar no prazo prometido',dicas:['Só prometa ao cliente o prazo que você consegue cumprir. Use como base o prazo real dos últimos pedidos, e não o desejado.','Faça uma reunião de 10 minutos por dia com a produção, olhando um quadro com os pedidos da semana e a data de entrega de cada um.','Garanta material, ferramenta e desenho do produto disponíveis antes de o pedido entrar na fábrica.','Quando um pedido atrasar, anote o motivo (falta de material, quebra, retrabalho, mudança do cliente) e avise o cliente antes de o prazo vencer.','Programe primeiro os pedidos com prazo mais próximo.'],ac:'Lista semanal dos pedidos entregues no prazo e dos atrasados, com o motivo de cada atraso.'},
+uti:{t:'Uso do tempo das máquinas',dicas:['Separe o tempo sem produção em categorias: setup, falta de material, falta de operador, manutenção e espera por liberação.','Escalone os intervalos para a máquina não parar na troca de turno ou no almoço, quando o processo permitir.','Programe a produção agrupando produtos parecidos para reduzir trocas.','Defina quem repõe o material e quem libera a primeira peça, para não haver espera.','Confira se as horas de trabalho por dia informadas descontam o almoço e as pausas.'],ac:'Horas produzindo e horas paradas, por motivo, toda semana.'},
+conv:{t:'Fechar mais orçamentos',dicas:['Entregue o orçamento no mesmo dia, com preço, prazo de entrega e condições de pagamento claros.','Faça retorno em até 2 dias úteis para cada orçamento não fechado e pergunte o que faltou.','Registre o motivo de cada orçamento perdido (preço, prazo, especificação, concorrente) e revise a lista toda semana.','Qualifique a demanda antes de orçar: volume, prazo, especificação técnica e forma de pagamento.','Mantenha preços e prazos de referência dos itens mais pedidos para responder mais rápido.'],ac:'Pedidos de orçamento recebidos e orçamentos fechados, toda semana.'},
 ret:{t:'Retenção de clientes',dicas:['Liste os clientes que não compram há mais de 60 dias (ajuste ao seu ciclo de compra) e faça contato direto.','Faça pós-venda após as primeiras entregas: pergunte sobre prazo, qualidade e o que melhorar.','Mantenha contato periódico com os 20% maiores clientes e conheça o calendário de compras deles.','Registre as reclamações e responda com prazo definido.','Ofereça entrega programada para clientes de compra recorrente.'],ac:'Clientes ativos no início e no fim de cada mês, e clientes que pararam de comprar.'},
-eq:{t:'Equilíbrio da equipe comercial',dicas:['Compare a carteira de cada representante (região, tipo e quantidade de clientes). A diferença de venda pode vir da carteira, e não só do desempenho.','Descubra o que o representante de melhor resultado faz de diferente (frequência de visita, preparação, retorno) e transforme em rotina para todos.','Defina metas individuais com acompanhamento semanal e dê apoio a quem vende menos.','Redistribua carteira ou regiões se a desigualdade vier da divisão.','Treine a equipe nas dúvidas mais comuns dos clientes.'],ac:'Venda mensal por representante e a taxa de equilíbrio.'},
-abs:{t:'Absenteísmo',dicas:['Registre as faltas por motivo (saúde, transporte, atestado, sem justificativa) e por setor.','Converse individualmente com quem falta com frequência, para entender a causa.','Revise escala, horário e transporte se a causa se repetir.','Reconheça a assiduidade com algo simples e coerente com a empresa.','Cuide da segurança e da ergonomia nos postos com mais afastamentos.'],ac:'Horas perdidas por faltas, por setor, toda semana.'},
+eq:{t:'Equilíbrio da equipe comercial',dicas:['Compare a carteira de cada vendedor (região, tipo e quantidade de clientes). A diferença de venda pode vir da carteira, e não só do desempenho.','Descubra o que o vendedor de melhor resultado faz de diferente (frequência de visita, preparação, retorno) e transforme em rotina para todos.','Defina metas individuais com acompanhamento semanal e dê apoio a quem vende menos.','Redistribua carteira ou regiões se a desigualdade vier da divisão.','Treine a equipe nas dúvidas mais comuns dos clientes.'],ac:'Venda mensal de cada vendedor e o equilíbrio entre eles.'},
 turn:{t:'Rotatividade (turnover)',dicas:['Faça entrevista de desligamento para entender por que as pessoas saem.','Revise a integração do funcionário novo: apresentação do posto, treinamento e acompanhamento nos primeiros 30 dias.','Compare salário e benefícios com o que o mercado local oferece para a função.','Defina um caminho de crescimento (polivalência e promoção) para os melhores colaboradores.','Verifique a relação com a liderança direta, que é causa frequente de saída.'],ac:'Admissões, demissões e motivos de saída, todo mês.'},
+tmv:{t:'Vender mais por cliente (ticket médio)',dicas:['Ofereça junto com o pedido o item que costuma ser comprado em conjunto (venda casada), como peças de reposição ou acessórios.','Mostre ao cliente o preço por unidade em lotes maiores e combine um pedido mínimo que valha a pena para a fábrica.','Antes de fechar, pergunte: "o que mais você vai precisar nos próximos meses?" e proponha um pedido programado.','Revise os produtos mais vendidos e crie kits ou pacotes com um preço único.','Registre os itens que os clientes pedem e que você ainda não oferece.'],ac:'Valor médio por venda, todo mês, comparado com o mês anterior.'},
+novos:{t:'Atrair clientes novos',dicas:['Liste os 10 melhores clientes e pergunte a cada um de quem eles compram o que você não vende. Peça indicação de outras empresas parecidas.','Visite ou ligue para 5 empresas novas por semana que usam o seu tipo de produto, com uma proposta curta e clara.','Mostre fotos e exemplos de trabalhos feitos, em um catálogo simples no WhatsApp.','Combine com o sindicato patronal, a federação das indústrias ou o Sebrae da sua região sobre rodadas de negócios e feiras do setor.','Responda todo pedido de orçamento no mesmo dia, pois quem responde primeiro costuma ganhar a venda.'],ac:'Número de contatos novos por semana e de orçamentos pedidos por clientes novos.'},
 trein:{t:'Horas de treinamento',dicas:['Liste os treinamentos obrigatórios (segurança e normas) e os que melhoram a produção (operação, setup e qualidade).','Use o treinamento no próprio posto, com um operador experiente ensinando o novo, para ganhar horas sem custo.','Monte uma matriz de habilidades, mostrando quem sabe operar cada máquina. Isso aumenta a polivalência.','Planeje as horas por mês e acompanhe o realizado.','Aproveite cursos gratuitos ou de baixo custo de entidades como Sebrae e Senai.'],ac:'Horas de treinamento por pessoa, por mês.'},
-lead:{t:'Prazo de entrega (lead time)',dicas:['Mapeie as etapas do pedido, da entrada à entrega, e meça o tempo de cada uma.','Identifique a etapa em que o pedido fica parado esperando (fila, aprovação ou material).','Reduza o tamanho dos lotes e as trocas para o pedido não esperar o lote completo.','Combine o prazo com o cliente com base no prazo real, não no desejado.','Avise o cliente sobre atrasos antes de o prazo vencer.'],ac:'Data do pedido e data da entrega de cada pedido.'}
+lead:{t:'Reduzir o prazo de entrega',dicas:['Mapeie as etapas do pedido, da entrada à entrega, e meça o tempo de cada uma.','Identifique a etapa em que o pedido fica parado esperando (fila, aprovação ou material).','Reduza o tamanho dos lotes e as trocas para o pedido não esperar o lote completo.','Combine o prazo com o cliente com base no prazo real, não no desejado.','Avise o cliente sobre atrasos antes de o prazo vencer.'],ac:'Data do pedido e data da entrega de cada pedido.'}
 };
 var MERC=[{"t": "Sobrevivência das empresas (Sebrae)", "l": ["Indústria de ME, EPP e demais portes: 80,6% seguem abertas após 5 anos. Ou seja, cerca de 19 em cada 100 encerram (100% menos 80,6%).", "Indústria de MEI: 61,4% seguem abertas após 5 anos.", "Brasil, todos os portes e setores: 62,8%. Por porte: MEI 57,7%, ME 74,3%, EPP 78,6%, demais 83,4%."], "f": "Sebrae, Sobrevivência das Empresas Mercantis Brasileiras 2017-2022 (resumo executivo de 31/03/2023 e relatório técnico). Empresas abertas entre 2017 e 2021, situação verificada no fim de 2022. Mortalidade = 100% menos a sobrevivência.", "u": "https://datasebrae.com.br/wp-content/uploads/2023/04/Resumo-executivo-Sobrevivencia-das-empresas-mercantis-brasileiras-11_04_23.pdf"}, {"t": "Empregos gerados (Sebrae, com dados do Caged)", "l": ["2025: saldo de 1.279.498 vagas formais no Brasil. As micro e pequenas empresas responderam por 80,5%.", "De 2023 a 2025: saldo de 4,4 milhões de vagas, das quais 3,4 milhões (77,9%) nas micro e pequenas empresas.", "Indústria de transformação: as micro e pequenas empresas somaram saldo de 304.556 vagas desde 2023.", "Os pequenos negócios são 97% das empresas e 26,5% do PIB (Sebrae, 11/03/2025; o ano-base não é informado na página)."], "f": "Agência Sebrae, publicado em 23/02/2026 (período 2023 a 2025).", "u": "https://agenciasebrae.com.br/economia-e-politica/mpes-sao-responsaveis-por-quase-80-do-saldo-de-empregos-no-pais-desde-2023/"}, {"t": "Tamanho da indústria (IBGE)", "l": ["376,7 mil empresas industriais, 8,5 milhões de pessoas ocupadas e R$ 6,5 trilhões de receita líquida de vendas.", "Receita por porte (pessoas ocupadas): 500 ou mais, 67,9%; 100 a 499, 17,1%; 20 a 99, 9,0%; até 19, 6,0%.", "Salário médio: 3,1 salários mínimos (indústria de transformação: 3,0)."], "f": "IBGE, Pesquisa Industrial Anual Empresa (PIA-Empresa) 2023, divulgada em 2025.", "u": "https://biblioteca.ibge.gov.br/visualizacao/periodicos/1719/pia_2023_v42_n1_empresa_informativo.pdf"}, {"t": "Momento financeiro da pequena indústria (CNI)", "l": ["Índice de situação financeira: 38,5 pontos (escala de 0 a 100), o pior nível em 5 anos e 0,3 ponto abaixo da média histórica. Ele combina a satisfação com a margem de lucro, a condição financeira e a facilidade de crédito.", "Índice de desempenho: 44,3 pontos.", "Carga tributária foi o principal problema citado na indústria de transformação: 41,0% das citações.", "A CNI não publica um percentual de margem de lucro. O índice mede apenas a satisfação dos empresários."], "f": "CNI, Panorama da Pequena Indústria, 3º trimestre de 2026 (divulgado em 03/11/2026).", "u": "https://noticias.portaldaindustria.com.br/noticias/economia/condicoes-financeiras-das-pequenas-industrias-atingem-o-pior-nivel-em-5-anos-revela-cni/"}, {"t": "Boas práticas para chegar à ISO 9001 (Sebrae)", "l": ["Etapa 1: alinhar escopo, responsáveis e cronograma.", "Etapa 2: diagnóstico dos processos de gestão, apoio, operação e avaliação de desempenho, com plano de ação.", "Etapa 3: definir indicadores, mapear processos, escrever procedimentos, treinar a equipe, fazer auditoria interna e tratar as não conformidades.", "Antes de começar, confira se existem: política da qualidade conhecida por todos, um responsável pela qualidade, manual, procedimentos dos processos principais e indicadores.", "Defina por que certificar (exigência de cliente, norma ou mercado) e contrate consultoria com pelo menos 3 anos de experiência em sistemas da qualidade.", "A ficha não informa prazo nem preço e não trata da escolha da certificadora. Confira no Inmetro se o organismo certificador é acreditado."], "f": "Sebrae, ficha técnica Sebraetec 13004-4, Adequação à Norma ABNT NBR ISO 9001:2015 (08/04/2020).", "u": "https://datasebrae.com.br/wp-content/uploads/2020/04/Adequação-à-norma-ABNT-NBR-ISO-9001-2015-Sistema-de-Gestão-da-Qualidade-GQ13004-4.pdf"}, {"t": "Como montar a sua meta de margem (método, não é dado de mercado)", "l": ["Margem de contribuição = preço de venda menos o que varia com a venda (matéria-prima, comissão, impostos sobre a venda, frete). Calcule por produto.", "Ponto de equilíbrio = custos fixos divididos pela margem de contribuição em % do preço.", "Meta de margem = a que cobre seus custos fixos e deixa o lucro que você precisa. Compare com o seu próprio histórico de 6 a 12 meses."], "f": "Conceito padrão de contabilidade de custos, sem percentual de referência oficial."}, {"t": "Sem número oficial encontrado", "l": ["Margem de lucro média das micro e pequenas indústrias (em %).", "Média de atraso de produção.", "Média de inconformidade ou refugo.", "Conversão média de orçamentos em pedidos.", "Não encontrei número oficial publicado para esses itens no IBGE, na CNI e no Sebrae. Por isso o diagnóstico não impõe uma média de mercado para eles. Use o seu histórico dos últimos 3 a 6 meses como base e melhore em passos, por exemplo conversão +5 pontos e lead time -10% em 90 dias. Existem pesquisas de empresas privadas de software sobre conversão, mas não são fontes oficiais e não foram usadas."], "f": "Pesquisa feita em 16/11/2026."}];
 var GLOS=[
-['OEE','Mede, em um número só, quanto da capacidade da máquina virou peça boa. Multiplica disponibilidade, performance e qualidade.'],
-['Disponibilidade, performance e qualidade','Os três pedaços do OEE: a máquina estava pronta para operar, andou na velocidade possível e fez peças boas.'],
-['MTBF','Tempo médio que a máquina trabalha entre uma falha e a próxima.'],
-['Lead time','Tempo total entre o pedido do cliente e a entrega.'],
+['MTBF','Tempo médio que as máquinas trabalham entre uma quebra e a próxima.'],
+['Lead time','Prazo total entre o cliente fechar o pedido e receber o produto.'],
+['Disponibilidade','Parte do tempo de trabalho em que as máquinas não ficaram paradas por quebra.'],
+['Utilização','Parte do tempo de trabalho em que as máquinas realmente produziram.'],
 ['Setup','Tempo gasto para trocar de produto ou de ferramenta na máquina.'],
 ['SMED','Método para reduzir o tempo de setup, preparando o que der para fazer enquanto a máquina ainda está rodando.'],
 ['TPM','Manutenção produtiva total: cuidar da máquina todos os dias, com a participação do operador, para evitar falhas.'],
-['Microparadas','Paradas curtas (poucos minutos) que passam despercebidas, mas somam muito tempo.'],
 ['Refugo e retrabalho','Refugo é a peça perdida. Retrabalho é a peça que precisa ser refeita.'],
 ['Pareto','Lista das causas em ordem de frequência. Normalmente poucas causas explicam a maior parte dos problemas.'],
-['KPI','Indicador-chave de desempenho: um número que mostra se você está atingindo o resultado desejado.'],
-['Turnover','Rotatividade: quanto da equipe entra e sai em um período.']
+['Ticket médio','Valor médio de cada venda: faturamento dividido pelo número de vendas.'],
+['Retenção de clientes','Dos clientes que compraram no ano passado, quantos voltaram a comprar.'],
+['Rotatividade (turnover)','Quanto da equipe entra e sai em um período.']
 ];
 
 /* ---------- estado ---------- */
@@ -321,11 +324,23 @@ function identOk(silent){
 }
 
 /* ---------- formulário de números ---------- */
-function buildForm(){
-  $('grupos').innerHTML=F.map(function(g){return '<div class="card"><h2>'+esc(g.t)+'</h2><p class="help">'+esc(g.intro)+'</p><div class="grid" style="margin-top:12px">'+g.f.map(function(f){return '<div class="f"><label for="f-'+f.k+'">'+esc(f.l)+'</label><input id="f-'+f.k+'" data-k="'+f.k+'" type="text" inputmode="decimal" autocomplete="off"><small class="h">'+esc(f.h)+'</small></div>'}).join('')+'</div></div>'}).join('');
-  $('grupos').querySelectorAll('input').forEach(function(el){el.addEventListener('input',function(){state.raw[el.dataset.k]=el.value;save()})});
+function fieldHtml(f){
+  var inp;
+  if(f.u==='sel'){inp='<select id="f-'+f.k+'" data-k="'+f.k+'"><option value="">Escolha</option>'+[1,2,3,4,5,6,7].map(function(n){return '<option value="'+n+'">'+n+(n===1?' dia':' dias')+'</option>'}).join('')+'</select>'}
+  else inp='<input id="f-'+f.k+'" data-k="'+f.k+'" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex.: '+esc(f.x)+'">';
+  return '<div class="f"><label for="f-'+f.k+'">'+esc(f.l)+'</label>'+inp+(f.h?'<small class="h">'+esc(f.h)+'</small>':'')+'</div>';
 }
-function fillInputs(){F.forEach(function(g){g.f.forEach(function(f){var el=$('f-'+f.k);if(el)el.value=state.raw[f.k]==null?'':state.raw[f.k]})})}
+function buildForm(){
+  $('grupos').innerHTML=F.map(function(g){return '<div class="card"><h2>'+esc(g.t)+'</h2><p class="help">'+esc(g.intro)+'</p><div class="grid" style="margin-top:12px">'+g.f.map(fieldHtml).join('')+'</div>'+(g.calc?'<div class="note" id="calc-tempo" style="margin-top:12px"></div>':'')+'</div>'}).join('');
+  $('grupos').querySelectorAll('input,select').forEach(function(el){var ev=el.tagName==='SELECT'?'change':'input';el.addEventListener(ev,function(){state.raw[el.dataset.k]=el.value;save();calcTempo()})});
+}
+function calcTempo(){
+  var box=$('calc-tempo');if(!box)return;
+  var d={};['nmaq','hdia','dsem'].forEach(function(k){d[k]=parseNum(state.raw[k])});
+  var t=tempoMin(d);
+  box.innerHTML=t==null?'<b>Tempo de trabalho das máquinas no mês:</b> preencha as três primeiras perguntas e a conta aparece aqui.':'<b>Tempo de trabalho das máquinas no mês (calculado):</b> '+nf(d.nmaq,0)+' máquinas × '+nf(d.hdia,1)+' horas × '+nf(d.dsem,0)+' dias por semana × '+nf(SEM,2)+' semanas = <b>'+nf(t/60,0)+' horas</b> ('+nf(t,0)+' minutos). Você não precisa fazer essa conta.';
+}
+function fillInputs(){F.forEach(function(g){g.f.forEach(function(f){var el=$('f-'+f.k);if(el)el.value=state.raw[f.k]==null?'':state.raw[f.k]})});calcTempo()}
 
 /* ---------- relatório ---------- */
 function build(){
@@ -334,8 +349,8 @@ function build(){
   return {R:R,d:d,rows:rows,warn:warnings(d,R)};
 }
 function planFor(rows){
-  var weight={disp:1,perf:2,qual:3,quebra:4,efi:5,uti:6,tr:7,te:8,abs:9,turn:10,trein:11};
-  var cand=rows.filter(function(r){return(r.s==='bad'||r.s==='warn')&&r.i.pb&&r.i.dir}).sort(function(a,b){
+  var weight={disp:1,qual:2,prazo:3,uti:4,turn:5};
+  var cand=rows.filter(function(r){return(r.s==='bad'||r.s==='warn')&&r.i.pb&&r.i.dir&&r.i.g!=='Comercial'}).sort(function(a,b){
     var sa=a.s==='bad'?0:1,sb=b.s==='bad'?0:1;if(sa!==sb)return sa-sb;return(weight[a.i.k]||99)-(weight[b.i.k]||99)});
   var seen={},out=[];cand.forEach(function(r){if(!seen[r.i.pb]){seen[r.i.pb]=1;out.push(r)}});
   return out.slice(0,4);
@@ -348,14 +363,36 @@ function planCard(r,n){
    '<p><b>O que fazer:</b></p><ul>'+p.dicas.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul>'+
    '<p><b>Como acompanhar:</b> '+esc(p.ac)+'</p></div>';
 }
+function vendasPlan(B){
+  var by={};B.rows.forEach(function(r){by[r.i.k]=r});
+  var out=[],pr=function(r){return r&&(r.s==='bad'?0:r.s==='warn'?1:2)};
+  if(!(by.tc||by.tr||by.te||by.tmv))return [];
+  var c=[];
+  if(by.tc)c.push({r:by.tc,o:1.5,meta:'subir a conversão em 5 pontos percentuais, de '+pctf(by.tc.v)+' para '+pctf(Math.min(1,by.tc.v+.05))+' em 90 dias (sugestão, sem média de mercado oficial)'});
+  if(by.tr)c.push({r:by.tr,o:pr(by.tr)});
+  if(by.te)c.push({r:by.te,o:pr(by.te)});
+  if(by.tmv)c.push({r:by.tmv,o:3,meta:'aumentar o valor médio por venda em 5%, de '+brl(by.tmv.v)+' para '+brl(by.tmv.v*1.05)+' em 90 dias (sugestão)'});
+  c.sort(function(a,b){return a.o-b.o});
+  c.slice(0,3).forEach(function(x){out.push(x)});
+  out.push({r:{i:{k:'novos',n:'Clientes novos',f:function(){return ''},ref:'',d:'',pb:'novos'},v:null,s:'info'},o:9,meta:'trazer clientes novos todo mês, para crescer sem depender só de quem já compra',novos:true});
+  return out;
+}
+function salesCard(x,n){
+  var r=x.r,i=r.i,p=PB[i.pb];
+  var onde=x.novos?'Quanto mais clientes diferentes compram de você, menos a empresa depende de poucos.':esc(i.n)+' em '+esc(i.f(r.v))+(i.dir?'. Referência: '+esc(i.ref)+'.':'. Sem faixa fixa de mercado: compare mês a mês.');
+  var meta=x.meta||metaTxt(i,r.v);
+  if(!x.meta)meta=i.n+' '+meta;
+  return '<div class="plan"><div class="ph"><span class="pill s-'+r.s+'">Venda '+n+'</span><h3>'+esc(p.t)+'</h3></div><p><b>Onde você está:</b> '+(x.novos?esc(onde):onde)+'</p><p><b>Meta para 90 dias:</b> '+esc(meta)+'.</p><p><b>O que fazer:</b></p><ul>'+p.dicas.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul><p><b>Como acompanhar:</b> '+esc(p.ac)+'</p></div>';
+}
 function indCard(r){
   var i=r.i,extra='';
-  if(i.k==='oee'){var R=state.cur.R;extra='<p class="d">Cálculo: '+pctf(R.disp)+' (disponibilidade) × '+pctf(R.perf)+' (performance) × '+pctf(R.qual)+' (qualidade).</p>'}
   return '<div class="ind s-'+r.s+'"><div class="top"><span class="nm">'+esc(i.n)+'</span><span class="pill s-'+r.s+'">'+SL[r.s]+'</span></div><div class="val">'+esc(i.f(r.v))+'</div><p class="d">'+esc(i.d)+'</p>'+extra+'<p class="rf">Referência: '+esc(i.ref)+(i.src?' ('+esc(SRC[i.src])+')':'')+'</p></div>';
 }
 function planText(B,plan){
+  var vp=vendasPlan(B);
   var t='DIAGNÓSTICO DE INDICADORES DA INDÚSTRIA\nCriado por Moisés Carvalho\n\n';
   plan.forEach(function(r,n){var p=PB[r.i.pb];t+='PRIORIDADE '+(n+1)+': '+p.t+'\nOnde você está: '+r.i.n+' em '+r.i.f(r.v)+' (referência: '+r.i.ref+')\nMeta para 90 dias: '+metaTxt(r.i,r.v)+'\nO que fazer:\n'+p.dicas.map(function(x){return '- '+x}).join('\n')+'\nComo acompanhar: '+p.ac+'\n\n'});
+  vp.forEach(function(x,n){var p=PB[x.r.i.pb];t+='PLANO DE VENDAS '+(n+1)+': '+p.t+'\nMeta para 90 dias: '+(x.meta||(x.r.i.n+' '+metaTxt(x.r.i,x.r.v)))+'\nO que fazer:\n'+p.dicas.map(function(y){return '- '+y}).join('\n')+'\nComo acompanhar: '+p.ac+'\n\n'});
   return t+'Quer conversar sobre seus números? Moisés Carvalho, Consultor Sebrae. WhatsApp (11) 2090-4264';
 }
 function renderRel(){
@@ -366,20 +403,24 @@ function renderRel(){
   if(!live&&!state.example)h+='<div class="note warn">Registro desativado: a conexão com o banco de dados ainda não foi configurada.</div>';
   if(state.sendErr)h+='<div class="note warn">Seu diagnóstico foi gerado, mas o registro para o consultor não foi concluído. Use o botão de WhatsApp abaixo para enviar seus números.</div>';
   if(B.warn.length)h+='<div class="note bad"><b>Confira estes dados antes de decidir com base no relatório:</b><ul>'+B.warn.map(function(w){return '<li>'+esc(w)+'</li>'}).join('')+'</ul></div>';
-  if(!B.rows.length){h+='<div class="card"><h2>Faltam números</h2><p>Preencha pelo menos um grupo completo para calcular indicadores.</p></div>';$('rel').innerHTML=h;return}
+  if(!B.rows.length){h+='<div class="card"><h2>Faltam números</h2><p>Responda pelo menos as etapas 1 e 2, ou 1 e 3, para calcular indicadores.</p></div>';$('rel').innerHTML=h;return}
   h+='<div class="sum"><div><b>'+B.rows.length+'</b><span>indicadores calculados</span></div><div><b style="color:var(--good)">'+cnt.good+'</b><span>dentro da referência</span></div><div><b style="color:var(--warn)">'+cnt.warn+'</b><span>em atenção</span></div><div><b style="color:var(--bad)">'+cnt.bad+'</b><span>críticos</span></div></div>';
-  h+='<h2>Plano de ação para 90 dias</h2>';
+  h+='<h2>Plano de ação para 90 dias: produção</h2>';
   if(plan.length)h+=plan.map(function(r,n){return planCard(r,n+1)}).join('');
-  else h+='<div class="note good">Nenhum indicador com faixa de referência ficou em atenção ou crítico. Mantenha o acompanhamento mensal e escolha um indicador para melhorar ainda mais.</div>';
+  else h+='<div class="note good">Nenhum indicador de produção com faixa de referência ficou em atenção ou crítico. Mantenha o acompanhamento mensal e escolha um indicador para melhorar ainda mais.</div>';
+  var vp=vendasPlan(B);
+  h+='<h2>Plano para vender mais</h2>';
+  if(vp.length)h+=vp.map(function(x,n){return salesCard(x,n+1)}).join('');
+  else h+='<div class="note">Responda a etapa 1 (vendas) para receber o plano de vendas.</div>';
   h+='<div id="iabox"></div>';
-  ['Produção','Comercial','Pessoas'].forEach(function(g){
+  ['Produção','Comercial','Equipe'].forEach(function(g){
     var rr=B.rows.filter(function(r){return r.i.g===g});if(!rr.length)return;
     h+='<div class="gt">'+g+'</div><div class="grid">'+rr.map(indCard).join('')+'</div>';
   });
-  var tcr=B.rows.filter(function(r){return r.i.k==='tc'||r.i.k==='lead'});
-  if(tcr.length){h+='<div class="gt">Para acompanhar mês a mês</div>';tcr.forEach(function(r){var p=PB[r.i.pb];h+='<details><summary>'+esc(p.t)+' · '+esc(r.i.n)+': '+esc(r.i.f(r.v))+'</summary><p>Sem faixa fixa de referência: o importante é a tendência. Sugestão de meta: '+(r.i.k==='tc'?'subir a conversão em 5 pontos percentuais':'reduzir o lead time em 10%')+' em 90 dias.</p><ul>'+p.dicas.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul></details>'})}
+  var lr=B.rows.filter(function(r){return r.i.k==='lead'});
+  if(lr.length){var r0=lr[0],p0=PB[r0.i.pb];h+='<div class="gt">Para acompanhar mês a mês</div><details><summary>'+esc(p0.t)+' · '+esc(r0.i.n)+': '+esc(r0.i.f(r0.v))+'</summary><p>Sem faixa fixa de referência: o importante é a tendência. Sugestão de meta: reduzir o prazo médio em 10% em 90 dias, chegando a '+esc(r0.i.f(r0.v*0.9))+'.</p><ul>'+p0.dicas.map(function(t){return "<li>"+esc(t)+"</li>"}).join('')+'</ul></details>'}
   h+='<div class="gt">Norteadores de mercado</div><details><summary>Dados oficiais para você definir a sua própria meta</summary><p class="help">São médias gerais, de fontes públicas, com data. Servem de referência e não de meta obrigatória. Confira sempre a edição mais recente na fonte.</p>'+MERC.map(function(m){return '<h4 style="margin:14px 0 4px">'+esc(m.t)+'</h4><ul>'+m.l.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul><p class="help">Fonte: '+(m.u?'<a href="'+esc(m.u)+'" target="_blank" rel="noopener">'+esc(m.f)+'</a>':esc(m.f))+'</p>'}).join('')+'</details>';
-  h+='<div class="gt">Termos usados</div><details><summary>O que significam OEE, MTBF, setup e outros termos</summary><ul>'+GLOS.map(function(g){return '<li><b>'+esc(g[0])+':</b> '+esc(g[1])+'</li>'}).join('')+'</ul></details>';
+  h+='<div class="gt">Termos usados</div><details><summary>O que significam MTBF, lead time, setup e outros termos</summary><ul>'+GLOS.map(function(g){return '<li><b>'+esc(g[0])+':</b> '+esc(g[1])+'</li>'}).join('')+'</ul></details>';
   var msg=encodeURIComponent('Olá, Moisés. Fiz o diagnóstico de indicadores da indústria'+(state.ident.nome&&!state.example?' ('+state.ident.nome.split(' ')[0]+')':'')+' e gostaria de conversar sobre meus números.');
   h+='<div class="contact" id="contato"><h3>Quer conversar sobre seus números?</h3><p>Moisés Carvalho, Consultor Sebrae. WhatsApp (11) 2090-4264</p><div class="row"><a class="btn" id="zap-link" href="https://wa.me/551120904264?text='+msg+'" target="_blank" rel="noopener">Chamar no WhatsApp</a><button type="button" class="sec" id="copiar">Copiar meu plano</button><button type="button" class="sec" id="editar">Editar números</button></div><p class="help" id="copiado" style="margin-top:8px"></p></div>';
   $('rel').innerHTML=h;
@@ -395,10 +436,9 @@ async function genIA(B){
   var box=$('iabox');if(!box)return;
   box.innerHTML='<div class="card ia"><h3>Sugestão automática (IA)</h3><p class="help">Gerando a sugestão a partir dos seus indicadores…</p></div>';
   var R=B.R,ind={};
-  ['tc','tr','te','efi','uti','disp','perf','qual','oee','quebra','abs','turn'].forEach(function(k){if(R[k]!=null)ind[k]=Math.round(R[k]*1000)/10});
+  ['tc','tr','te','uti','disp','qual','prazo','turn'].forEach(function(k){if(R[k]!=null)ind[k]=Math.round(R[k]*1000)/10});
   if(R.mtbf!=null)ind.mtbf_h=Math.round(R.mtbf/60*10)/10;
   if(R.lead!=null)ind.lead_dias=R.lead;
-  if(R.trein!=null)ind.trein_h_ano=Math.round(R.trein*10)/10;
   try{
     var ctl=new AbortController(),tm=setTimeout(function(){ctl.abort()},25000);
     var r=await fetch(CFG.url+'/functions/v1/sugestao',{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json',apikey:CFG.anon,Authorization:'Bearer '+CFG.anon},body:JSON.stringify({ind:ind})});
@@ -437,7 +477,7 @@ $('t-dados').onclick=function(){if(!$('t-dados').disabled)show('dados')};
 $('t-rel').onclick=function(){if(!$('t-rel').disabled)show('rel')};
 $('gerar').onclick=async function(){
   var B=build(),e=$('e-dados');
-  if(B.rows.length<3){e.textContent='Preencha pelo menos um grupo completo de números para calcular os indicadores.';e.hidden=false;return}
+  if(B.rows.length<3){e.textContent='Responda mais perguntas para calcular pelo menos 3 indicadores. Comece pela etapa 1 (vendas) e pela etapa 2 (horas das máquinas).';e.hidden=false;return}
   e.hidden=true;state.reportReady=true;unlock();
   var b=$('gerar');b.disabled=true;
   await enviar(B);
@@ -474,16 +514,16 @@ function renderPainel(){
   var rows=rowsCache,now=Date.now(),day=864e5;
   var n7=rows.filter(function(r){return now-Date.parse(r.created_at)<7*day}).length;
   var zap=rows.filter(function(r){return r.whatsapp}).length;
-  var oee=med(rows.map(function(r){return r.indicadores&&r.indicadores.oee}));
-  var crit=rows.filter(function(r){var o=r.indicadores&&r.indicadores.oee;return o!=null&&o<.60}).length;
+  var oee=med(rows.map(function(r){return r.indicadores&&r.indicadores.tc}));
+  var crit=rows.filter(function(r){var ind=r.indicadores||{},c=0;Object.keys(ind).forEach(function(k){var i=BYK[k];if(i&&status(i,ind[k])==='bad')c++});return c>0}).length;
   var h='<div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Respostas</h2><div class="row"><span class="help">Atualiza sozinho a cada 20 segundos</span><button type="button" class="sec sm" id="csv">Exportar CSV</button><button type="button" class="sec sm" id="sair">Sair</button><button type="button" class="sec sm" id="ao-diag">Ver diagnóstico</button></div></div>';
-  h+='<div class="sum"><div><b>'+rows.length+'</b><span>empresas responderam</span></div><div><b>'+n7+'</b><span>nos últimos 7 dias</span></div><div><b>'+zap+'</b><span>com WhatsApp</span></div><div><b>'+(oee==null?'—':pctf(oee))+'</b><span>OEE mediano</span></div><div><b>'+crit+'</b><span>com OEE abaixo de 60%</span></div></div>';
+  h+='<div class="sum"><div><b>'+rows.length+'</b><span>empresas responderam</span></div><div><b>'+n7+'</b><span>nos últimos 7 dias</span></div><div><b>'+zap+'</b><span>com WhatsApp</span></div><div><b>'+(oee==null?'—':pctf(oee))+'</b><span>conversão mediana</span></div><div><b>'+crit+'</b><span>com algum indicador crítico</span></div></div>';
   if(!rows.length)h+='<div class="card"><h3>Ainda sem respostas</h3><p class="help">Compartilhe o link do diagnóstico. Cada empresa que concluir aparece aqui automaticamente.</p></div>';
   else{
-    h+='<div class="card"><div class="tbl"><table><thead><tr><th>Nome</th><th>CNPJ</th><th>WhatsApp</th><th>Data</th><th>OEE</th><th>Críticos</th><th></th></tr></thead><tbody>'+rows.map(function(r){
+    h+='<div class="card"><div class="tbl"><table><thead><tr><th>Nome</th><th>CNPJ</th><th>WhatsApp</th><th>Data</th><th>Conversão</th><th>Críticos</th><th></th></tr></thead><tbody>'+rows.map(function(r){
       var ind=r.indicadores||{},cr=0;Object.keys(ind).forEach(function(k){var i=BYK[k];if(i&&status(i,ind[k])==='bad')cr++});
       var dt=new Date(r.created_at);
-      return '<tr><td>'+esc(r.nome)+'</td><td>'+esc(maskCnpj(r.cnpj))+'</td><td>'+(r.whatsapp?'<a href="https://wa.me/55'+esc(r.whatsapp)+'" target="_blank" rel="noopener">'+esc(maskZap(r.whatsapp))+'</a>':'—')+'</td><td>'+esc(dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))+'</td><td>'+(ind.oee!=null?pctf(ind.oee):'—')+'</td><td>'+cr+'</td><td><button type="button" class="sec sm" data-det="'+r.id+'">Ver</button> <button type="button" class="sec sm" data-del="'+r.id+'">Excluir</button></td></tr><tr class="det" id="det-'+r.id+'" hidden><td colspan="7"></td></tr>';
+      return '<tr><td>'+esc(r.nome)+'</td><td>'+esc(maskCnpj(r.cnpj))+'</td><td>'+(r.whatsapp?'<a href="https://wa.me/55'+esc(r.whatsapp)+'" target="_blank" rel="noopener">'+esc(maskZap(r.whatsapp))+'</a>':'—')+'</td><td>'+esc(dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))+'</td><td>'+(ind.tc!=null?pctf(ind.tc):'—')+'</td><td>'+cr+'</td><td><button type="button" class="sec sm" data-det="'+r.id+'">Ver</button> <button type="button" class="sec sm" data-del="'+r.id+'">Excluir</button></td></tr><tr class="det" id="det-'+r.id+'" hidden><td colspan="7"></td></tr>';
     }).join('')+'</tbody></table></div></div>';
   }
   $('pn').innerHTML=h;
@@ -504,7 +544,7 @@ function exportCsv(){
   var keys=IND.map(function(i){return i.k});
   var head=['Nome','CNPJ','WhatsApp','Data'].concat(keys.map(nameOf));
   var lines=[head].concat(rowsCache.map(function(r){var ind=r.indicadores||{};return [r.nome,maskCnpj(r.cnpj),r.whatsapp?maskZap(r.whatsapp):'',new Date(r.created_at).toLocaleString('pt-BR')].concat(keys.map(function(k){var v=ind[k];if(v==null)return '';var f=BYK[k].f===pctf?v*100:v;return nf(f,2)}))}));
-  var csv='\ufeff'+lines.map(function(l){return l.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"'}).join(';')}).join('\r\n');
+  var csv='﻿'+lines.map(function(l){return l.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"'}).join(';')}).join('\r\n');
   try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='diagnosticos-industria.csv';document.body.appendChild(a);a.click();a.remove()}catch(e){}
 }
 $('abre-painel').onclick=function(){show('painel');if(tok&&live)carregar()};
