@@ -45,6 +45,8 @@ button:disabled{opacity:.55;cursor:default}
 .note.warn{background:var(--warnbg);color:var(--warn)}
 .note.bad{background:var(--badbg);color:var(--bad)}
 .note.good{background:var(--goodbg);color:var(--good)}
+.praise{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--goodbg);color:var(--good);font-size:13px}
+.fm{font-size:12px;color:var(--mut);margin-top:6px}
 .note ul{margin:6px 0 0 18px;padding:0}
 .sum{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .sum div{flex:1 1 130px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px}
@@ -149,32 +151,35 @@ function div(a,b){return(a!=null&&b!=null&&b>0)?a/b:null}
 var SEM=4.33; /* semanas em um mês médio */
 var F=[
 {id:'com',t:'1. Vendas',intro:'Pense em um mês normal e recente. Os números de vendas ficam no seu sistema, nas notas fiscais ou na planilha de orçamentos.',f:[
- {k:'orc',l:'Quantos pedidos de orçamento você recebeu no mês?',h:'Conte todo cliente que pediu preço, por telefone, WhatsApp, e-mail ou visita.',x:'320',u:'int'},
- {k:'ped',l:'Desses, quantos orçamentos foram fechados (viraram venda)?',h:'Conte os orçamentos que o cliente aprovou e comprou.',x:'96',u:'int'},
- {k:'fat',l:'Quanto você faturou no mês (em reais)?',h:'Some o valor de todas as vendas do mês.',x:'450000',u:'brl'},
- {k:'cA',l:'Quantos clientes diferentes compraram de você no ano passado?',h:'Considere os 12 meses anteriores aos últimos 12 meses. Se a empresa é nova, deixe em branco.',x:'180',u:'int'},
- {k:'cB',l:'Desses clientes, quantos voltaram a comprar nos últimos 12 meses?',h:'Conte só os que estavam na pergunta anterior e compraram de novo.',x:'126',u:'int'},
+ {k:'orc',l:'Quantos pedidos de orçamento você recebeu no mês?',h:'Conte todo cliente que pediu preço, por telefone, WhatsApp, e-mail ou visita. Onde achar: planilha de orçamentos, caderno do vendedor ou histórico do WhatsApp e do e-mail.',x:'320',u:'int'},
+ {k:'ped',l:'Desses, quantos orçamentos foram fechados (viraram venda)?',h:'Conte os orçamentos que o cliente aprovou e comprou. Onde achar: pedidos de venda ou notas fiscais emitidas no mês.',x:'96',u:'int'},
+ {k:'fat',l:'Quanto você faturou no mês (em reais)?',h:'Some o valor de todas as vendas do mês. Onde achar: relatório de vendas do sistema ou soma das notas fiscais emitidas. Se não tiver o total, peça ao contador.',x:'450000',u:'brl'},
+ {k:'cA',l:'Quantos clientes diferentes compraram de você entre 24 e 12 meses atrás?',h:'É o ano anterior aos últimos 12 meses. Onde achar: peça ao financeiro ou ao contador a lista de clientes com nota fiscal nesse período e conte cada empresa uma vez só. Se a empresa tem menos de 2 anos, deixe em branco.',x:'180',u:'int'},
+ {k:'cB',l:'Desses clientes, quantos também compraram de você nos últimos 12 meses?',h:'Conte só os que estavam na pergunta anterior e compraram de novo no último ano. Dica: compare as duas listas de clientes numa planilha.',x:'126',u:'int'},
  {k:'vmax',l:'Quanto o vendedor que mais vendeu faturou no mês (em reais)?',h:'Se você vende sozinho ou tem só um vendedor, deixe em branco.',x:'210000',u:'brl'},
  {k:'vmin',l:'Quanto o vendedor que menos vendeu faturou no mês (em reais)?',h:'Mesma regra da pergunta anterior.',x:'130000',u:'brl'}]},
-{id:'tem',t:'2. Horas de trabalho das máquinas',intro:'Aqui descobrimos quanto tempo suas máquinas poderiam produzir e quanto realmente produzem. Responda pensando nas máquinas que fazem seus produtos, mesmo que sejam de tipos diferentes.',calc:true,f:[
- {k:'nmaq',l:'Quantas máquinas de produção você tem funcionando?',h:'Conte as máquinas principais que fazem seu produto. Não conte ferramentas manuais.',x:'8',u:'int'},
+{id:'cus',t:'2. Custos e lucro',intro:'Com estes dois números descobrimos quanto sobra de cada venda e quanto você precisa vender para não ter prejuízo. Se você não sabe, peça ao contador o resultado do mês (DRE) ou o resumo das despesas. Uma estimativa já ajuda.',f:[
+ {k:'cv',l:'Quanto você gastou no mês com o que varia conforme você vende e produz?',h:'Some: matéria-prima, embalagens, impostos sobre a venda, comissões, frete e outros gastos que sobem quando você vende mais e caem quando vende menos. Onde achar: notas de compra do mês, guias de imposto e comissões pagas.',x:'270000',u:'brl'},
+ {k:'cf',l:'Quanto você gastou no mês com os custos que você paga mesmo se não vender nada?',h:'Some: aluguel, salários e encargos, pró-labore, contador, energia, água, internet, seguros, manutenção do prédio e parcelas fixas. Onde achar: extrato bancário, folha de pagamento e contas pagas do mês.',x:'120000',u:'brl'}]},
+{id:'tem',t:'3. Horas de trabalho das máquinas',intro:'Aqui descobrimos quanto tempo suas máquinas poderiam produzir e quanto realmente produzem. Responda pensando nas máquinas que fazem seus produtos, mesmo que sejam de tipos diferentes.',calc:true,f:[
+ {k:'nmaq',l:'Quantas máquinas de produção você tem funcionando?',h:'Conte as máquinas principais que fazem seu produto, mesmo que sejam de tipos diferentes. Não conte ferramentas manuais. Onde achar: lista de ativos ou, se não houver, uma volta pela fábrica contando.',x:'8',u:'int'},
  {k:'hdia',l:'Quantas horas por dia a fábrica trabalha?',h:'Desconte o almoço e as pausas. Se trabalha das 7h às 16h com 1 hora de almoço, são 8 horas.',x:'8',u:'dec'},
  {k:'dsem',l:'Quantos dias por semana a fábrica trabalha?',h:'Escolha de 1 a 7. Se trabalha de segunda a sexta, são 5.',x:'5',u:'sel'},
- {k:'hpar',l:'Quantas horas as máquinas ficaram paradas por quebra no mês?',h:'Some todas as paradas por defeito ou conserto, de todas as máquinas. Estimativa serve. Se não houve, digite 0.',x:'60',u:'dec'},
+ {k:'hpar',l:'Quantas horas as máquinas ficaram paradas por quebra no mês?',h:'Some todas as paradas por defeito ou conserto, de todas as máquinas. Onde achar: ordens de manutenção, caderno do mecânico ou pergunte ao líder de produção. Estimativa serve. Se não houve, digite 0.',x:'60',u:'dec'},
  {k:'nfal',l:'Quantas vezes uma máquina quebrou ou parou por defeito no mês?',h:'Conte cada parada como uma vez. Se não houve, digite 0.',x:'8',u:'int'},
  {k:'hout',l:'Quantas horas as máquinas ficaram paradas por outros motivos no mês?',h:'Troca de produto ou ferramenta, falta de material, falta de operador, espera por liberação. Some todas as máquinas. Dica: horas perdidas por dia × dias trabalhados no mês.',x:'260',u:'dec'}]},
-{id:'qua',t:'3. Qualidade e entregas',intro:'Mostra quanto do que você produz sai certo e quanto sai no prazo prometido ao cliente.',f:[
- {k:'pprod',l:'Quantas peças ou unidades você produziu no mês?',h:'Some tudo o que saiu das máquinas, de todos os produtos.',x:'8500',u:'int'},
- {k:'pruim',l:'Dessas, quantas foram jogadas fora ou tiveram que ser refeitas?',h:'Some as peças com defeito (refugo) e as que voltaram para conserto (retrabalho). Se não houve, digite 0.',x:'570',u:'int'},
- {k:'oprog',l:'Quantos pedidos tinham entrega prometida para este mês?',h:'Conte os pedidos cujo prazo de entrega caiu no mês.',x:'120',u:'int'},
+{id:'qua',t:'4. Qualidade e entregas',intro:'Mostra quanto do que você produz sai certo e quanto sai no prazo prometido ao cliente.',f:[
+ {k:'pprod',l:'Quantas peças ou unidades você produziu no mês?',h:'Some tudo o que saiu das máquinas, de todos os produtos. Onde achar: apontamento de produção, relatório do sistema ou contagem do estoque de produto acabado.',x:'8500',u:'int'},
+ {k:'pruim',l:'Dessas, quantas foram jogadas fora ou tiveram que ser refeitas?',h:'Some as peças com defeito (refugo) e as que voltaram para conserto (retrabalho). Onde achar: caixa de refugo, registro de qualidade ou pergunte ao responsável. Se não houve, digite 0.',x:'570',u:'int'},
+ {k:'oprog',l:'Quantos pedidos tinham entrega prometida para este mês?',h:'Conte os pedidos cujo prazo de entrega caiu no mês. Onde achar: carteira de pedidos ou planilha de entregas.',x:'120',u:'int'},
  {k:'oprazo',l:'Desses, quantos foram entregues dentro do prazo prometido?',h:'Pedidos entregues no dia combinado ou antes.',x:'96',u:'int'}]},
-{id:'lea',t:'4. Prazo de entrega',intro:'Pegue os últimos pedidos que você entregou. Para cada um, conte quantos dias se passaram entre o dia em que o cliente fechou o pedido e o dia em que ele recebeu. Preencha pelo menos 3 pedidos; o diagnóstico calcula a média.',f:[
- {k:'l1',l:'Pedido 1: quantos dias do pedido até a entrega?',h:'Conte os dias corridos no calendário.',x:'9',u:'dec'},
+{id:'lea',t:'5. Prazo de entrega',intro:'Pegue os últimos pedidos que você entregou. Para cada um, conte quantos dias se passaram entre o dia em que o cliente fechou o pedido e o dia em que ele recebeu. Preencha pelo menos 3 pedidos; o diagnóstico calcula a média.',f:[
+ {k:'l1',l:'Pedido 1: quantos dias do pedido até a entrega?',h:'Conte os dias corridos no calendário. Exemplo: pedido fechado no dia 3 e entregue no dia 12 são 9 dias. Onde achar: data do pedido e data da nota fiscal de entrega.',x:'9',u:'dec'},
  {k:'l2',l:'Pedido 2: quantos dias?',h:'',x:'7',u:'dec'},
  {k:'l3',l:'Pedido 3: quantos dias?',h:'',x:'12',u:'dec'},
  {k:'l4',l:'Pedido 4: quantos dias? (opcional)',h:'',x:'6',u:'dec'},
  {k:'l5',l:'Pedido 5: quantos dias? (opcional)',h:'',x:'8',u:'dec'}]},
-{id:'eqp',t:'5. Equipe nos últimos 12 meses',intro:'Só três números, olhando o último ano inteiro, para medir a rotatividade (entra e sai de gente).',f:[
+{id:'eqp',t:'6. Equipe nos últimos 12 meses',intro:'Só três números, olhando o último ano inteiro, para medir a rotatividade (entra e sai de gente).',f:[
  {k:'colab',l:'Quantos colaboradores trabalham na empresa hoje?',h:'Conte a equipe inteira, fábrica e escritório.',x:'42',u:'int'},
  {k:'adm12',l:'Quantas pessoas foram contratadas nos últimos 12 meses?',h:'Some todas as admissões do último ano.',x:'14',u:'int'},
  {k:'dem12',l:'Quantas pessoas saíram nos últimos 12 meses?',h:'Some demissões e pedidos de demissão do último ano.',x:'12',u:'int'}]}
@@ -213,6 +218,9 @@ function compute(raw){
   R.prazo=div(d.oprazo,d.oprog);
   R.lead=(d.lead!=null&&d.nlead>=1)?d.lead:null;
   R.turn=(d.colab>0&&d.adm12!=null&&d.dem12!=null)?((d.adm12+d.dem12)/2)/d.colab:null;
+  if(d.fat>0&&d.cv!=null){R.margem=(d.fat-d.cv)/d.fat;
+    if(d.cf!=null){R.lucro=d.fat-d.cv-d.cf;R.mlucro=R.lucro/d.fat;
+      if(R.margem>0){d.pe=d.cf/R.margem;R.pe=d.pe;R.folga=(d.fat-d.pe)/d.fat}}}
   return {d:d,R:R};
 }
 function warnings(d,R){
@@ -223,6 +231,8 @@ function warnings(d,R){
   else if(d.tdisp!=null&&d.hpar!=null&&d.hpar*60>d.tdisp)w.push('As horas paradas por quebra passam do tempo total de trabalho das máquinas ('+nf(d.tdisp/60,0)+' horas no mês).');
   if(d.nfal>0&&d.hpar===0)w.push('Você informou quebras, mas as horas paradas por quebra estão zeradas.');
   if(d.pruim>d.pprod)w.push('As peças perdidas ou refeitas são mais que as peças produzidas.');
+  if(d.cv>d.fat)w.push('Os custos variáveis são maiores que o faturamento. Confira os dois valores.');
+  if(d.fat>0&&d.cv!=null&&d.fat-d.cv<=0&&d.cv<=d.fat)w.push('Os custos variáveis consomem todo o faturamento, então não sobra nada para os custos fixos. Confira os valores.');
   if(d.ped>d.orc)w.push('Há mais orçamentos fechados que pedidos de orçamento ('+pctf(R.tc)+' de conversão). Confira os dois números.');
   if(d.cB>d.cA)w.push('Os clientes que voltaram são mais que os clientes do ano passado.');
   if(d.vmin>d.vmax)w.push('O vendedor que menos vendeu aparece com venda maior que o que mais vendeu.');
@@ -233,28 +243,41 @@ function warnings(d,R){
 }
 
 /* ---------- indicadores e referências ---------- */
-var SRC={n:'Nakajima (TPM)',d:'Apresentação do programa',w:'referência de trabalho, ajuste ao seu setor'};
+var SRC={n:'Nakajima (TPM)',w:'referência de trabalho, ajuste ao seu setor'};
 var fpp=function(v){return nf(v,0)+' h/ano'};
 var IND=[
-{k:'disp',g:'Produção',n:'Disponibilidade das máquinas',f:pctf,dir:'up',good:.90,warn:.80,src:'n',ref:'90% ou mais',pb:'manut',step:.05,d:'Do tempo em que as máquinas deveriam trabalhar, quanto não foi perdido com quebra.'},
-{k:'uti',g:'Produção',n:'Utilização das máquinas',f:pctf,dir:'up',good:.85,warn:.70,src:'w',ref:'85% ou mais',pb:'uti',step:.05,d:'Do tempo em que as máquinas deveriam trabalhar, quanto elas realmente ficaram produzindo (sem quebra, troca, espera ou falta de material).'},
-{k:'qual',g:'Produção',n:'Qualidade (peças boas)',f:pctf,dir:'up',good:.99,warn:.95,src:'n',ref:'99% ou mais',pb:'qual',step:.02,d:'De cada 100 peças produzidas, quantas saíram boas, sem precisar jogar fora nem refazer.'},
-{k:'prazo',g:'Produção',n:'Entregas no prazo',f:pctf,dir:'up',good:.95,warn:.85,src:'w',ref:'95% ou mais',pb:'plan',step:.05,d:'Dos pedidos com entrega prometida para o mês, quantos saíram dentro do prazo.'},
-{k:'mtbf',g:'Produção',n:'Tempo médio entre quebras (MTBF)',f:function(v){return v>=120?nf(v/60,1)+' horas':nf(v,0)+' minutos'},dir:null,d:'Tempo médio que as máquinas trabalham entre uma quebra e a seguinte. Quanto maior, mais confiável.',ref:'sem faixa fixa: compare mês a mês'},
-{k:'lead',g:'Produção',n:'Prazo médio de entrega (lead time)',f:function(v){return nf(v,1)+' dias'},dir:null,pb:'lead',d:'Tempo médio entre o cliente fechar o pedido e receber o produto.',ref:'sem faixa fixa: depende do produto'},
-{k:'tc',g:'Comercial',n:'Conversão de orçamentos em vendas',f:pctf,dir:null,pb:'conv',d:'De cada 100 pedidos de orçamento, quantos viram venda.',ref:'sem faixa fixa: compare mês a mês'},
-{k:'tmv',g:'Comercial',n:'Valor médio por venda (ticket médio)',f:brl,dir:null,pb:'tmv',d:'Faturamento dividido pelo número de orçamentos fechados.',ref:'sem faixa fixa: compare mês a mês'},
-{k:'tr',g:'Comercial',n:'Clientes que voltaram a comprar (retenção)',f:pctf,dir:'up',good:.80,warn:.60,src:'w',ref:'80% ou mais ao ano',pb:'ret',step:.05,d:'Dos clientes que compraram no ano passado, quantos voltaram a comprar nos últimos 12 meses.'},
-{k:'te',g:'Comercial',n:'Equilíbrio entre vendedores',f:pctf,dir:'up',good:.70,warn:.50,src:'d',ref:'70% ou mais (o que menos vende não fica abaixo de 70% do que mais vende)',pb:'eq',step:.05,d:'Venda de quem menos vendeu dividida pela de quem mais vendeu.'},
-{k:'turn',g:'Equipe',n:'Rotatividade da equipe (12 meses)',f:pctf,dir:'down',good:.24,warn:.48,src:'w',ref:'até 24% ao ano',pb:'turn',step:.06,d:'Média entre contratações e saídas dos últimos 12 meses, dividida pela equipe de hoje.'}
+{k:'disp',g:'Produção',n:'Disponibilidade das máquinas',f:pctf,dir:'up',good:.90,warn:.80,src:'n',ref:'90% ou mais',pb:'manut',step:.05,fm:'(Tempo de trabalho − horas paradas por quebra) ÷ tempo de trabalho',d:'Do tempo em que as máquinas deveriam trabalhar, quanto não foi perdido com quebra.'},
+{k:'qual',g:'Produção',n:'Qualidade (peças boas)',f:pctf,dir:'up',good:.99,warn:.95,src:'n',ref:'99% ou mais',pb:'qual',step:.02,fm:'(Peças produzidas − peças perdidas ou refeitas) ÷ peças produzidas',d:'De cada 100 peças produzidas, quantas saíram boas, sem precisar jogar fora nem refazer.'},
+{k:'prazo',g:'Produção',n:'Entregas no prazo',f:pctf,dir:'up',good:.95,warn:.85,src:'w',ref:'95% ou mais',pb:'plan',step:.05,fm:'Pedidos entregues no prazo ÷ pedidos com entrega prevista',d:'Dos pedidos com entrega prometida para o mês, quantos saíram dentro do prazo.'},
+{k:'uti',g:'Produção',n:'Utilização das máquinas',f:pctf,dir:null,pb:'uti',lev:{t:'pp',s:5,m:'up'},fm:'(Tempo de trabalho − quebra − outras paradas) ÷ tempo de trabalho',d:'Do tempo em que as máquinas deveriam trabalhar, quanto elas realmente ficaram produzindo (sem quebra, troca, espera ou falta de material).',ref:'sem faixa fixa: depende do processo, compare mês a mês'},
+{k:'mtbf',g:'Produção',n:'Tempo médio entre quebras (MTBF)',f:function(v){return v>=120?nf(v/60,1)+' horas':nf(v,0)+' minutos'},dir:null,fm:'Horas produzindo ÷ número de quebras',d:'Tempo médio que as máquinas trabalham entre uma quebra e a seguinte. Quanto maior, mais confiável.',ref:'sem faixa fixa: compare mês a mês'},
+{k:'lead',g:'Produção',n:'Prazo médio de entrega (lead time)',f:function(v){return nf(v,1)+' dias'},dir:null,pb:'lead',lev:{t:'rel',s:10,m:'down'},fm:'Média dos dias dos pedidos informados',d:'Tempo médio entre o cliente fechar o pedido e receber o produto.',ref:'sem faixa fixa: depende do produto'},
+{k:'tc',g:'Comercial',n:'Conversão de orçamentos em vendas',f:pctf,dir:null,pb:'conv',lev:{t:'pp',s:5,m:'up'},fm:'Orçamentos fechados ÷ pedidos de orçamento',d:'De cada 100 pedidos de orçamento, quantos viram venda.',ref:'sem faixa fixa: varia por setor, compare mês a mês'},
+{k:'tmv',g:'Comercial',n:'Valor médio por venda (ticket médio)',f:brl,dir:null,pb:'tmv',lev:{t:'rel',s:5,m:'up'},fm:'Faturamento ÷ orçamentos fechados',d:'Faturamento dividido pelo número de orçamentos fechados.',ref:'sem faixa fixa: compare mês a mês'},
+{k:'tr',g:'Comercial',n:'Clientes que voltaram a comprar (retenção)',f:pctf,dir:null,pb:'ret',lev:{t:'pp',s:5,m:'up'},fm:'Clientes que voltaram ÷ clientes do período anterior',d:'Dos clientes que compraram entre 24 e 12 meses atrás, quantos também compraram nos últimos 12 meses.',ref:'sem faixa fixa: varia por setor, compare ano a ano'},
+{k:'te',g:'Comercial',n:'Equilíbrio entre vendedores',f:pctf,dir:null,pb:'eq',lev:{t:'pp',s:5,m:'up'},fm:'Venda de quem menos vendeu ÷ venda de quem mais vendeu',d:'Venda de quem menos vendeu dividida pela de quem mais vendeu. Quanto mais perto de 100%, mais parelha a equipe.',ref:'sem faixa fixa: compare mês a mês'},
+{k:'margem',g:'Resultado',n:'Margem de contribuição',f:pctf,dir:null,pb:'marg',lev:{t:'pp',s:2,m:'up'},fm:'(Faturamento − custos variáveis) ÷ faturamento',d:'De cada R$ 100 vendidos, quanto sobra depois de pagar o que varia com a venda (matéria-prima, embalagem, impostos, comissão, frete). É essa sobra que paga os custos fixos e deixa o lucro.',ref:'sem faixa fixa: varia por produto e setor, compare mês a mês'},
+{k:'lucro',g:'Resultado',n:'Lucro do mês',f:brl,dir:null,st:function(v){return v<0?'bad':'info'},lab:{bad:'Prejuízo'},fm:'Faturamento − custos variáveis − custos fixos',d:'O que sobrou no mês depois de pagar todos os custos informados. Se for negativo, a empresa gastou mais do que vendeu.',ref:'acima de zero'},
+{k:'mlucro',g:'Resultado',n:'Margem de lucro',f:pctf,dir:null,st:function(v){return v<0?'bad':'info'},lab:{bad:'Prejuízo'},fm:'Lucro ÷ faturamento',d:'De cada R$ 100 vendidos, quanto ficou de lucro no fim do mês.',ref:'sem faixa fixa: varia por setor, compare mês a mês'},
+{k:'pe',g:'Resultado',n:'Ponto de equilíbrio',f:brl,dir:null,fm:'Custos fixos ÷ margem de contribuição',d:'Quanto a empresa precisa faturar no mês só para cobrir os custos. Abaixo disso há prejuízo.',ref:'compare com o seu faturamento'},
+{k:'folga',g:'Resultado',n:'Folga sobre o equilíbrio',f:pctf,dir:'up',good:.20,warn:0,src:'w',ref:'20% ou mais',pb:'cf',step:.05,lab:{good:'Confortável',warn:'Apertado',bad:'Abaixo'},pr:'Suas vendas podem cair bastante antes de dar prejuízo. Mantenha os custos sob controle para preservar essa folga.',fm:'(Faturamento − ponto de equilíbrio) ÷ faturamento',d:'Quanto as vendas podem cair antes de dar prejuízo.'},
+{k:'turn',g:'Equipe',n:'Rotatividade da equipe (12 meses)',f:pctf,dir:null,fm:'((Contratações + saídas) ÷ 2) ÷ colaboradores hoje',d:'Média entre contratações e saídas dos últimos 12 meses, dividida pela equipe de hoje. Quanto menor, mais estável a equipe.',ref:'sem faixa fixa: compare ano a ano'}
 ];
 var BYK={};IND.forEach(function(i){BYK[i.k]=i});
 function status(i,v){
-  if(v==null)return null;if(!i.dir)return 'info';
+  if(v==null)return null;if(i.st)return i.st(v);if(!i.dir)return 'info';
   if(i.dir==='up')return v>=i.good?'good':v>=i.warn?'warn':'bad';
   return v<=i.good?'good':v<=i.warn?'warn':'bad';
 }
-var SL={good:'Dentro da referência',warn:'Atenção',bad:'Crítico',info:'Informativo'};
+var SL={good:'Dentro da referência',warn:'Atenção',bad:'Crítico',info:'Sem faixa de referência'};
+function slab(i,s){return(i.lab&&i.lab[s])||SL[s]}
+function levTxt(i,v){
+  var L=i.lev,t;
+  if(L.t==='pp'){t=L.m==='up'?Math.min(1,v+L.s/100):Math.max(0,v-L.s/100);return (L.m==='up'?'subir':'reduzir')+' de '+i.f(v)+' para '+i.f(t)+' em 90 dias (mais '+L.s+' pontos percentuais; sugestão de meta, sem média de mercado oficial)'}
+  t=L.m==='up'?v*(1+L.s/100):v*(1-L.s/100);
+  return (L.m==='up'?'subir':'reduzir')+' de '+i.f(v)+' para '+i.f(t)+' em 90 dias ('+(L.m==='up'?'mais ':'menos ')+L.s+'%; sugestão, sem média de mercado oficial)';
+}
+function metaFull(i,v){return i.dir?i.n+' '+metaTxt(i,v):(i.lev?i.n+': '+levTxt(i,v):'')}
 function metaTxt(i,v){
   var t=i.dir==='up'?Math.min(i.good,v+i.step):Math.max(i.good,v-i.step);
   return 'de '+i.f(v)+' para '+i.f(t)+' em 90 dias';
@@ -262,6 +285,8 @@ function metaTxt(i,v){
 
 /* ---------- planos de ação ---------- */
 var PB={
+marg:{t:'Melhorar a margem de contribuição',dicas:['Calcule a margem de cada produto principal (preço de venda menos matéria-prima, embalagem, imposto, comissão e frete). Quase sempre há produtos que vendem muito e deixam pouco.','Reajuste o preço dos produtos de menor margem ou negocie o prazo e o mínimo de pedido com os clientes.','Peça cotação a pelo menos 2 fornecedores para as 5 matérias-primas que mais pesam no custo.','Reduza o desperdício de material: meça a sobra de cada lote e discuta com a produção.','Revise comissões e frete: veja se estão dentro do que a margem aguenta.'],ac:'Margem de contribuição do mês e dos 5 produtos que mais vendem.'},
+cf:{t:'Ganhar folga e lucro',dicas:['Liste todos os custos fixos do mês, do maior para o menor, e questione cada um dos 5 maiores: ainda precisa? Dá para renegociar?','Aumente o faturamento sem aumentar os custos fixos: mais pedidos para a mesma fábrica diluem o custo.','Venda mais dos produtos de maior margem de contribuição. Cada real a mais deles ajuda o lucro mais do que um real de produto de margem baixa.','Antes de contratar ou comprar máquina nova, calcule quanto precisa vender a mais para pagar essa despesa fixa.','Acompanhe o ponto de equilíbrio todo mês e compare com o faturamento.'],ac:'Faturamento do mês contra o ponto de equilíbrio, com a folga em %.'},
 manut:{t:'Manutenção e paradas por falha',dicas:['Liste as 5 máquinas que mais pararam no mês e o motivo de cada parada. Comece o plano por elas.','Crie um plano de manutenção preventiva por equipamento (limpeza, lubrificação e inspeção) com data e responsável, e cumpra antes de a falha acontecer.','Peça ao operador uma inspeção simples no início do turno (ruídos, vazamentos, folgas) e registre. Essa rotina faz parte do TPM (manutenção produtiva total).','Mantenha em estoque as peças de reposição das paradas que mais se repetem.','Registre cada falha com data, hora, duração e causa. Sem esse registro o MTBF e a taxa de quebra ficam imprecisos.'],ac:'Tempo parado por falha e número de falhas, toda semana.'},
 perf:{t:'Velocidade de operação (performance)',dicas:['Confirme se a capacidade teórica informada está correta (do fabricante ou de um teste), pois ela define a performance.','Registre as microparadas, que são paradas curtas de poucos minutos por falta de material, ajuste ou espera. Somadas, costumam pesar mais que uma quebra.','Reduza o tempo de setup (troca de produto ou ferramenta) preparando o que for possível com a máquina ainda rodando. Essa técnica se chama SMED.','Padronize a velocidade de trabalho por produto e treine os operadores no melhor ajuste conhecido.','Abasteça a linha antes de o material acabar, com um responsável definido.'],ac:'Peças por hora de cada máquina, comparadas com a capacidade teórica.'},
 qual:{t:'Qualidade (peças boas)',dicas:['Registre o refugo (peça perdida) e o retrabalho (peça refeita) por causa e por turno.','Ataque primeiro as 2 ou 3 causas que mais se repetem. Um gráfico de Pareto simples mostra quais são.','Inspecione as primeiras peças de cada lote antes de produzir a quantidade total.','Padronize o ajuste da máquina por produto em uma ficha de ajuste e deixe à vista do operador.','Confira a matéria-prima na entrada e converse com o fornecedor sobre os defeitos que se repetem.'],ac:'Percentual de peças boas por turno e as 3 principais causas de defeito.'},
@@ -288,7 +313,10 @@ var GLOS=[
 ['Refugo e retrabalho','Refugo é a peça perdida. Retrabalho é a peça que precisa ser refeita.'],
 ['Pareto','Lista das causas em ordem de frequência. Normalmente poucas causas explicam a maior parte dos problemas.'],
 ['Ticket médio','Valor médio de cada venda: faturamento dividido pelo número de vendas.'],
-['Retenção de clientes','Dos clientes que compraram no ano passado, quantos voltaram a comprar.'],
+['Margem de contribuição','O que sobra de cada venda depois de pagar o que varia com ela (matéria-prima, embalagem, impostos, comissão, frete). Paga os custos fixos e gera o lucro.'],
+['Custos fixos e variáveis','Fixos você paga mesmo sem vender (aluguel, salários). Variáveis mudam conforme você produz e vende (matéria-prima, embalagem, frete).'],
+['Ponto de equilíbrio','Faturamento mínimo para cobrir todos os custos. Abaixo dele há prejuízo, acima dele há lucro.'],
+['Retenção de clientes','Dos clientes que compraram entre 24 e 12 meses atrás, quantos também compraram nos últimos 12 meses.'],
 ['Rotatividade (turnover)','Quanto da equipe entra e sai em um período.']
 ];
 
@@ -349,50 +377,55 @@ function build(){
   return {R:R,d:d,rows:rows,warn:warnings(d,R)};
 }
 function planFor(rows){
-  var weight={disp:1,qual:2,prazo:3,uti:4,turn:5};
-  var cand=rows.filter(function(r){return(r.s==='bad'||r.s==='warn')&&r.i.pb&&r.i.dir&&r.i.g!=='Comercial'}).sort(function(a,b){
+  var weight={disp:1,qual:2,prazo:3};
+  var cand=rows.filter(function(r){return(r.s==='bad'||r.s==='warn')&&r.i.pb&&r.i.dir&&r.i.g==='Produção'}).sort(function(a,b){
     var sa=a.s==='bad'?0:1,sb=b.s==='bad'?0:1;if(sa!==sb)return sa-sb;return(weight[a.i.k]||99)-(weight[b.i.k]||99)});
   var seen={},out=[];cand.forEach(function(r){if(!seen[r.i.pb]){seen[r.i.pb]=1;out.push(r)}});
-  return out.slice(0,4);
+  ['uti','lead'].forEach(function(k){rows.forEach(function(r){if(r.i.k===k&&out.length<3&&!seen[r.i.pb]){seen[r.i.pb]=1;out.push(r)}})});
+  return out.slice(0,3);
 }
-function planCard(r,n){
+function onde(r){var i=r.i;return esc(i.n)+' em '+esc(i.f(r.v))+(i.dir?'. Referência: '+esc(i.ref)+'.':'. Sem faixa fixa de mercado: compare com o período anterior.')}
+function planCard(r,n,rot){
   var p=PB[r.i.pb];
-  return '<div class="plan"><div class="ph"><span class="pill s-'+r.s+'">Prioridade '+n+'</span><h3>'+esc(p.t)+'</h3></div>'+
-   '<p><b>Onde você está:</b> '+esc(r.i.n)+' em '+esc(r.i.f(r.v))+'. Referência: '+esc(r.i.ref)+'.</p>'+
-   '<p><b>Meta para 90 dias:</b> '+esc(r.i.n)+' '+esc(metaTxt(r.i,r.v))+'.</p>'+
+  return '<div class="plan"><div class="ph"><span class="pill s-'+r.s+'">'+(rot||'Prioridade')+' '+n+'</span><h3>'+esc(p.t)+'</h3></div>'+
+   '<p><b>Onde você está:</b> '+onde(r)+'</p>'+
+   '<p><b>Meta para 90 dias:</b> '+esc(metaFull(r.i,r.v))+'.</p>'+
    '<p><b>O que fazer:</b></p><ul>'+p.dicas.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul>'+
    '<p><b>Como acompanhar:</b> '+esc(p.ac)+'</p></div>';
 }
 function vendasPlan(B){
   var by={};B.rows.forEach(function(r){by[r.i.k]=r});
-  var out=[],pr=function(r){return r&&(r.s==='bad'?0:r.s==='warn'?1:2)};
-  if(!(by.tc||by.tr||by.te||by.tmv))return [];
-  var c=[];
-  if(by.tc)c.push({r:by.tc,o:1.5,meta:'subir a conversão em 5 pontos percentuais, de '+pctf(by.tc.v)+' para '+pctf(Math.min(1,by.tc.v+.05))+' em 90 dias (sugestão, sem média de mercado oficial)'});
-  if(by.tr)c.push({r:by.tr,o:pr(by.tr)});
-  if(by.te)c.push({r:by.te,o:pr(by.te)});
-  if(by.tmv)c.push({r:by.tmv,o:3,meta:'aumentar o valor médio por venda em 5%, de '+brl(by.tmv.v)+' para '+brl(by.tmv.v*1.05)+' em 90 dias (sugestão)'});
-  c.sort(function(a,b){return a.o-b.o});
-  c.slice(0,3).forEach(function(x){out.push(x)});
-  out.push({r:{i:{k:'novos',n:'Clientes novos',f:function(){return ''},ref:'',d:'',pb:'novos'},v:null,s:'info'},o:9,meta:'trazer clientes novos todo mês, para crescer sem depender só de quem já compra',novos:true});
+  var out=[];
+  ['tc','tmv','tr','te'].forEach(function(k){if(by[k]&&out.length<3)out.push({r:by[k]})});
+  if(!out.length)return [];
+  out.push({r:{i:{k:'novos',n:'Clientes novos',f:function(){return ''},ref:'',d:'',pb:'novos'},v:null,s:'info'},novos:true,meta:'trazer clientes novos todo mês, para crescer sem depender só de quem já compra'});
   return out;
 }
-function salesCard(x,n){
+function finPlan(B){
+  var by={};B.rows.forEach(function(r){by[r.i.k]=r});
+  var out=[];
+  if(by.folga&&(by.folga.s==='bad'||by.folga.s==='warn'||(by.lucro&&by.lucro.s==='bad')))out.push({r:by.folga,meta:by.lucro&&by.lucro.v<0?'chegar ao ponto de equilíbrio de '+brl(by.pe.v)+' por mês, vendendo mais ou cortando custos, para sair do prejuízo':null});
+  if(by.margem)out.push({r:by.margem});
+  return out;
+}
+function salesCard(x,n,rot){
   var r=x.r,i=r.i,p=PB[i.pb];
-  var onde=x.novos?'Quanto mais clientes diferentes compram de você, menos a empresa depende de poucos.':esc(i.n)+' em '+esc(i.f(r.v))+(i.dir?'. Referência: '+esc(i.ref)+'.':'. Sem faixa fixa de mercado: compare mês a mês.');
-  var meta=x.meta||metaTxt(i,r.v);
-  if(!x.meta)meta=i.n+' '+meta;
-  return '<div class="plan"><div class="ph"><span class="pill s-'+r.s+'">Venda '+n+'</span><h3>'+esc(p.t)+'</h3></div><p><b>Onde você está:</b> '+(x.novos?esc(onde):onde)+'</p><p><b>Meta para 90 dias:</b> '+esc(meta)+'.</p><p><b>O que fazer:</b></p><ul>'+p.dicas.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul><p><b>Como acompanhar:</b> '+esc(p.ac)+'</p></div>';
+  var meta=x.meta||metaFull(i,r.v);
+  var onde1=x.novos?'Quanto mais clientes diferentes compram de você, menos a empresa depende de poucos.':onde(r);
+  return '<div class="plan"><div class="ph"><span class="pill s-'+r.s+'">'+(rot||'Venda')+' '+n+'</span><h3>'+esc(p.t)+'</h3></div><p><b>Onde você está:</b> '+(x.novos?esc(onde1):onde1)+'</p><p><b>Meta para 90 dias:</b> '+esc(meta)+'.</p><p><b>O que fazer:</b></p><ul>'+p.dicas.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul><p><b>Como acompanhar:</b> '+esc(p.ac)+'</p></div>';
 }
 function indCard(r){
   var i=r.i,extra='';
-  return '<div class="ind s-'+r.s+'"><div class="top"><span class="nm">'+esc(i.n)+'</span><span class="pill s-'+r.s+'">'+SL[r.s]+'</span></div><div class="val">'+esc(i.f(r.v))+'</div><p class="d">'+esc(i.d)+'</p>'+extra+'<p class="rf">Referência: '+esc(i.ref)+(i.src?' ('+esc(SRC[i.src])+')':'')+'</p></div>';
+  if(r.s==='good')extra='<p class="praise"><b>Parabéns!</b> '+esc(i.pr||'Este indicador está dentro da referência. Mantenha a rotina que trouxe esse resultado.')+'</p>';
+  return '<div class="ind s-'+r.s+'"><div class="top"><span class="nm">'+esc(i.n)+'</span><span class="pill s-'+r.s+'">'+esc(slab(i,r.s))+'</span></div><div class="val">'+esc(i.f(r.v))+'</div><p class="d">'+esc(i.d)+'</p>'+extra+'<p class="fm"><b>Como calculamos:</b> '+esc(i.fm||'')+'</p><p class="rf">Referência: '+esc(i.ref)+(i.src?' ('+esc(SRC[i.src])+')':'')+'</p></div>';
 }
 function planText(B,plan){
-  var vp=vendasPlan(B);
+  var vp=vendasPlan(B),fp=finPlan(B);
   var t='DIAGNÓSTICO DE INDICADORES DA INDÚSTRIA\nCriado por Moisés Carvalho\n\n';
-  plan.forEach(function(r,n){var p=PB[r.i.pb];t+='PRIORIDADE '+(n+1)+': '+p.t+'\nOnde você está: '+r.i.n+' em '+r.i.f(r.v)+' (referência: '+r.i.ref+')\nMeta para 90 dias: '+metaTxt(r.i,r.v)+'\nO que fazer:\n'+p.dicas.map(function(x){return '- '+x}).join('\n')+'\nComo acompanhar: '+p.ac+'\n\n'});
-  vp.forEach(function(x,n){var p=PB[x.r.i.pb];t+='PLANO DE VENDAS '+(n+1)+': '+p.t+'\nMeta para 90 dias: '+(x.meta||(x.r.i.n+' '+metaTxt(x.r.i,x.r.v)))+'\nO que fazer:\n'+p.dicas.map(function(y){return '- '+y}).join('\n')+'\nComo acompanhar: '+p.ac+'\n\n'});
+  function bloco(tit,r,meta){var p=PB[r.i.pb];return tit+': '+p.t+'\nMeta para 90 dias: '+meta+'\nO que fazer:\n'+p.dicas.map(function(x){return '- '+x}).join('\n')+'\nComo acompanhar: '+p.ac+'\n\n'}
+  plan.forEach(function(r,n){t+=bloco('PRIORIDADE '+(n+1),r,metaFull(r.i,r.v))});
+  vp.forEach(function(x,n){t+=bloco('PLANO DE VENDAS '+(n+1),x.r,x.meta||metaFull(x.r.i,x.r.v))});
+  fp.forEach(function(x,n){t+=bloco('PLANO DE LUCRO '+(n+1),x.r,x.meta||metaFull(x.r.i,x.r.v))});
   return t+'Quer conversar sobre seus números? Moisés Carvalho, Consultor Sebrae. WhatsApp (11) 2090-4264';
 }
 function renderRel(){
@@ -403,22 +436,27 @@ function renderRel(){
   if(!live&&!state.example)h+='<div class="note warn">Registro desativado: a conexão com o banco de dados ainda não foi configurada.</div>';
   if(state.sendErr)h+='<div class="note warn">Seu diagnóstico foi gerado, mas o registro para o consultor não foi concluído. Use o botão de WhatsApp abaixo para enviar seus números.</div>';
   if(B.warn.length)h+='<div class="note bad"><b>Confira estes dados antes de decidir com base no relatório:</b><ul>'+B.warn.map(function(w){return '<li>'+esc(w)+'</li>'}).join('')+'</ul></div>';
-  if(!B.rows.length){h+='<div class="card"><h2>Faltam números</h2><p>Responda pelo menos as etapas 1 e 2, ou 1 e 3, para calcular indicadores.</p></div>';$('rel').innerHTML=h;return}
+  if(!B.rows.length){h+='<div class="card"><h2>Faltam números</h2><p>Responda pelo menos as etapas 1 (vendas) e 2 (custos), ou a etapa 3 (máquinas), para calcular indicadores.</p></div>';$('rel').innerHTML=h;return}
   h+='<div class="sum"><div><b>'+B.rows.length+'</b><span>indicadores calculados</span></div><div><b style="color:var(--good)">'+cnt.good+'</b><span>dentro da referência</span></div><div><b style="color:var(--warn)">'+cnt.warn+'</b><span>em atenção</span></div><div><b style="color:var(--bad)">'+cnt.bad+'</b><span>críticos</span></div></div>';
+  var fortes=B.rows.filter(function(r){return r.s==='good'});
+  if(fortes.length)h+='<div class="note good"><b>Parabéns!</b> Estes indicadores estão dentro da referência: '+fortes.map(function(r){return esc(r.i.n)+' ('+esc(r.i.f(r.v))+')'}).join(', ')+'. É o resultado de um trabalho bem feito. Continue acompanhando todo mês.</div>';
+  h+='<p class="help" style="margin-bottom:12px">Só recebem nota os indicadores que têm referência amplamente usada. Os demais variam de empresa para empresa e aparecem sem nota: o que importa é acompanhar a evolução mês a mês.</p>';
   h+='<h2>Plano de ação para 90 dias: produção</h2>';
   if(plan.length)h+=plan.map(function(r,n){return planCard(r,n+1)}).join('');
-  else h+='<div class="note good">Nenhum indicador de produção com faixa de referência ficou em atenção ou crítico. Mantenha o acompanhamento mensal e escolha um indicador para melhorar ainda mais.</div>';
+  else h+='<div class="note">Responda as etapas de horas das máquinas, qualidade e entregas para receber o plano de produção.</div>';
   var vp=vendasPlan(B);
   h+='<h2>Plano para vender mais</h2>';
   if(vp.length)h+=vp.map(function(x,n){return salesCard(x,n+1)}).join('');
   else h+='<div class="note">Responda a etapa 1 (vendas) para receber o plano de vendas.</div>';
+  var fp=finPlan(B);
+  h+='<h2>Plano para lucrar mais</h2>';
+  if(fp.length)h+=fp.map(function(x,n){return salesCard(x,n+1,'Lucro')}).join('');
+  else h+='<div class="note">Responda a etapa 2 (custos) e a etapa 1 (vendas) para receber o plano de lucro.</div>';
   h+='<div id="iabox"></div>';
-  ['Produção','Comercial','Equipe'].forEach(function(g){
+  ['Produção','Comercial','Resultado','Equipe'].forEach(function(g){
     var rr=B.rows.filter(function(r){return r.i.g===g});if(!rr.length)return;
     h+='<div class="gt">'+g+'</div><div class="grid">'+rr.map(indCard).join('')+'</div>';
   });
-  var lr=B.rows.filter(function(r){return r.i.k==='lead'});
-  if(lr.length){var r0=lr[0],p0=PB[r0.i.pb];h+='<div class="gt">Para acompanhar mês a mês</div><details><summary>'+esc(p0.t)+' · '+esc(r0.i.n)+': '+esc(r0.i.f(r0.v))+'</summary><p>Sem faixa fixa de referência: o importante é a tendência. Sugestão de meta: reduzir o prazo médio em 10% em 90 dias, chegando a '+esc(r0.i.f(r0.v*0.9))+'.</p><ul>'+p0.dicas.map(function(t){return "<li>"+esc(t)+"</li>"}).join('')+'</ul></details>'}
   h+='<div class="gt">Norteadores de mercado</div><details><summary>Dados oficiais para você definir a sua própria meta</summary><p class="help">São médias gerais, de fontes públicas, com data. Servem de referência e não de meta obrigatória. Confira sempre a edição mais recente na fonte.</p>'+MERC.map(function(m){return '<h4 style="margin:14px 0 4px">'+esc(m.t)+'</h4><ul>'+m.l.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul><p class="help">Fonte: '+(m.u?'<a href="'+esc(m.u)+'" target="_blank" rel="noopener">'+esc(m.f)+'</a>':esc(m.f))+'</p>'}).join('')+'</details>';
   h+='<div class="gt">Termos usados</div><details><summary>O que significam MTBF, lead time, setup e outros termos</summary><ul>'+GLOS.map(function(g){return '<li><b>'+esc(g[0])+':</b> '+esc(g[1])+'</li>'}).join('')+'</ul></details>';
   var msg=encodeURIComponent('Olá, Moisés. Fiz o diagnóstico de indicadores da indústria'+(state.ident.nome&&!state.example?' ('+state.ident.nome.split(' ')[0]+')':'')+' e gostaria de conversar sobre meus números.');
@@ -436,7 +474,7 @@ async function genIA(B){
   var box=$('iabox');if(!box)return;
   box.innerHTML='<div class="card ia"><h3>Sugestão automática (IA)</h3><p class="help">Gerando a sugestão a partir dos seus indicadores…</p></div>';
   var R=B.R,ind={};
-  ['tc','tr','te','uti','disp','qual','prazo','turn'].forEach(function(k){if(R[k]!=null)ind[k]=Math.round(R[k]*1000)/10});
+  ['tc','tr','te','uti','disp','qual','prazo','turn','margem','mlucro','folga'].forEach(function(k){if(R[k]!=null)ind[k]=Math.round(R[k]*1000)/10});
   if(R.mtbf!=null)ind.mtbf_h=Math.round(R.mtbf/60*10)/10;
   if(R.lead!=null)ind.lead_dias=R.lead;
   try{
@@ -477,7 +515,7 @@ $('t-dados').onclick=function(){if(!$('t-dados').disabled)show('dados')};
 $('t-rel').onclick=function(){if(!$('t-rel').disabled)show('rel')};
 $('gerar').onclick=async function(){
   var B=build(),e=$('e-dados');
-  if(B.rows.length<3){e.textContent='Responda mais perguntas para calcular pelo menos 3 indicadores. Comece pela etapa 1 (vendas) e pela etapa 2 (horas das máquinas).';e.hidden=false;return}
+  if(B.rows.length<3){e.textContent='Responda mais perguntas para calcular pelo menos 3 indicadores. Comece pela etapa 1 (vendas), pela etapa 2 (custos) e pela etapa 3 (horas das máquinas).';e.hidden=false;return}
   e.hidden=true;state.reportReady=true;unlock();
   var b=$('gerar');b.disabled=true;
   await enviar(B);
@@ -533,7 +571,7 @@ function renderPainel(){
     var id=b.dataset.det,tr=$('det-'+id),r=rowsCache.filter(function(x){return String(x.id)===id})[0];
     if(!tr.hidden){tr.hidden=true;return}
     var ind=r.indicadores||{};
-    tr.firstChild.innerHTML='<div class="grid">'+IND.filter(function(i){return ind[i.k]!=null}).map(function(i){var s=status(i,ind[i.k]);return '<div class="ind s-'+s+'"><div class="top"><span class="nm">'+esc(i.n)+'</span><span class="pill s-'+s+'">'+SL[s]+'</span></div><div class="val" style="font-size:18px">'+esc(i.f(ind[i.k]))+'</div></div>'}).join('')+'</div>';
+    tr.firstChild.innerHTML='<div class="grid">'+IND.filter(function(i){return ind[i.k]!=null}).map(function(i){var s=status(i,ind[i.k]);return '<div class="ind s-'+s+'"><div class="top"><span class="nm">'+esc(i.n)+'</span><span class="pill s-'+s+'">'+esc(slab(i,s))+'</span></div><div class="val" style="font-size:18px">'+esc(i.f(ind[i.k]))+'</div></div>'}).join('')+'</div>';
     tr.hidden=false}});
   $('pn').querySelectorAll('[data-del]').forEach(function(b){b.onclick=async function(){
     if(armed!==b.dataset.del){armed=b.dataset.del;b.textContent='Confirmar exclusão';setTimeout(function(){if(armed===b.dataset.del){armed=null;b.textContent='Excluir'}},4000);return}
