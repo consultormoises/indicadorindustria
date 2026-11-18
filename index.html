@@ -264,13 +264,13 @@ var IND=[
 {k:'mtbf',g:'Produção',n:'Tempo médio entre quebras',f:function(v){return v>=120?nf(v/60,1)+' horas':nf(v,0)+' minutos'},dir:null,fm:'Horas produzindo ÷ número de quebras',d:'Tempo médio que as máquinas trabalham entre uma quebra e a seguinte. Quanto maior, mais confiável.',ref:'sem faixa fixa: compare mês a mês'},
 {k:'lead',g:'Produção',n:'Prazo médio de entrega',f:function(v){return nf(v,1)+' dias'},dir:null,pb:'lead',lev:{t:'rel',s:10,m:'down'},fm:'Média dos dias dos pedidos informados',d:'Tempo médio entre o cliente fechar o pedido e receber o produto.',ref:'sem faixa fixa: depende do produto'},
 {k:'tc',g:'Comercial',n:'Conversão de orçamentos em vendas',f:pctf,dir:null,pb:'conv',lev:{t:'pp',s:5,m:'up'},fm:'Orçamentos fechados ÷ pedidos de orçamento',d:'De cada 100 pedidos de orçamento, quantos viram venda.',ref:'sem faixa fixa: varia por setor, compare mês a mês'},
-{k:'tmv',g:'Comercial',n:'Valor médio por venda',f:brl,dir:null,pb:'tmv',lev:{t:'rel',s:5,m:'up'},fm:'Faturamento ÷ orçamentos fechados',d:'Faturamento dividido pelo número de orçamentos fechados.',ref:'sem faixa fixa: compare mês a mês'},
+{k:'tmv',priv:true,g:'Comercial',n:'Valor médio por venda',f:brl,dir:null,pb:'tmv',lev:{t:'rel',s:5,m:'up'},fm:'Faturamento ÷ orçamentos fechados',d:'Faturamento dividido pelo número de orçamentos fechados.',ref:'sem faixa fixa: compare mês a mês'},
 {k:'tr',g:'Comercial',n:'Clientes que voltaram a comprar (retenção)',f:pctf,dir:null,pb:'ret',lev:{t:'pp',s:5,m:'up'},fm:'Clientes que voltaram ÷ clientes do ano passado',d:'Dos clientes que compraram no ano passado, quantos voltaram a comprar neste ano.',ref:'sem faixa fixa: varia por setor, compare ano a ano'},
 {k:'te',g:'Comercial',n:'Equilíbrio entre vendedores',f:pctf,dir:null,pb:'eq',lev:{t:'pp',s:5,m:'up'},fm:'Venda de quem menos vendeu ÷ venda de quem mais vendeu',d:'Venda de quem menos vendeu dividida pela de quem mais vendeu. Quanto mais perto de 100%, mais parelha a equipe.',ref:'sem faixa fixa: compare mês a mês'},
 {k:'margem',g:'Resultado',n:'Margem de contribuição',f:pctf,dir:null,pb:'marg',lev:{t:'pp',s:2,m:'up'},fm:'(Faturamento − custos variáveis) ÷ faturamento',d:'De cada R$ 100 vendidos, quanto sobra depois de pagar o que varia com a venda (matéria-prima, embalagem, impostos, comissão, frete). É essa sobra que paga os custos fixos e deixa o lucro.',ref:'sem faixa fixa: varia por produto e setor, compare mês a mês'},
-{k:'lucro',g:'Resultado',n:'Lucro do mês',f:brl,dir:null,st:function(v){return v<0?'bad':'info'},lab:{bad:'Prejuízo'},fm:'Faturamento − custos variáveis − custos fixos',d:'O que sobrou no mês depois de pagar todos os custos informados. Se for negativo, a empresa gastou mais do que vendeu.',ref:'acima de zero'},
+{k:'lucro',priv:true,g:'Resultado',n:'Lucro do mês',f:brl,dir:null,st:function(v){return v<0?'bad':'info'},lab:{bad:'Prejuízo'},fm:'Faturamento − custos variáveis − custos fixos',d:'O que sobrou no mês depois de pagar todos os custos informados. Se for negativo, a empresa gastou mais do que vendeu.',ref:'acima de zero'},
 {k:'mlucro',g:'Resultado',n:'Margem de lucro',f:pctf,dir:null,st:function(v){return v<0?'bad':'info'},lab:{bad:'Prejuízo'},fm:'Lucro ÷ faturamento',d:'De cada R$ 100 vendidos, quanto ficou de lucro no fim do mês.',ref:'sem faixa fixa: varia por setor, compare mês a mês'},
-{k:'pe',g:'Resultado',n:'Ponto de equilíbrio',f:brl,dir:null,fm:'Custos fixos ÷ margem de contribuição',d:'Quanto a empresa precisa faturar no mês só para cobrir os custos. Abaixo disso há prejuízo.',ref:'compare com o seu faturamento'},
+{k:'pe',priv:true,g:'Resultado',n:'Ponto de equilíbrio',f:brl,dir:null,fm:'Custos fixos ÷ margem de contribuição',d:'Quanto a empresa precisa faturar no mês só para cobrir os custos. Abaixo disso há prejuízo.',ref:'compare com o seu faturamento'},
 {k:'folga',g:'Resultado',n:'Folga sobre o equilíbrio',f:pctf,dir:'up',good:.20,warn:0,src:'w',ref:'20% ou mais',pb:'cf',step:.05,lab:{good:'Confortável',warn:'Apertado',bad:'Abaixo'},pr:'Suas vendas podem cair bastante antes de dar prejuízo. Mantenha os custos sob controle para preservar essa folga.',fm:'(Faturamento − ponto de equilíbrio) ÷ faturamento',d:'Quanto as vendas podem cair antes de dar prejuízo.'},
 {k:'turn',g:'Equipe',n:'Rotatividade da equipe (12 meses)',f:pctf,dir:null,fm:'((Contratações + saídas) ÷ 2) ÷ colaboradores hoje',d:'Média entre contratações e saídas dos últimos 12 meses, dividida pela equipe de hoje. Quanto menor, mais estável a equipe.',ref:'sem faixa fixa: compare ano a ano'}
 ];
@@ -507,8 +507,10 @@ async function genIA(B){
 /* ---------- envio ---------- */
 async function enviar(B){
   if(!live||state.example||state.sent)return;
-  var ind={};Object.keys(B.R).forEach(function(k){if(B.R[k]!=null)ind[k]=Math.round(B.R[k]*10000)/10000});
-  var dados={};Object.keys(B.d).forEach(function(k){if(B.d[k]!=null)dados[k]=B.d[k]});
+  /* valores em reais (faturamento, custos, lucro etc.) não são gravados: ficam só na tela do cliente */
+  var PRIV_D={fat:1,cv:1,cf:1,vmax:1,vmin:1,pe:1};
+  var ind={};Object.keys(B.R).forEach(function(k){if(B.R[k]!=null&&!(BYK[k]&&BYK[k].priv))ind[k]=Math.round(B.R[k]*10000)/10000});
+  var dados={};Object.keys(B.d).forEach(function(k){if(B.d[k]!=null&&!PRIV_D[k])dados[k]=B.d[k]});
   var body={nome:state.ident.nome.trim().replace(/\s+/g,' '),cnpj:dig(state.ident.cnpj),whatsapp:dig(state.ident.zap)||null,aceite:true,dados:dados,indicadores:ind};
   try{
     var r=await fetch(CFG.url+'/rest/v1/diagnosticos',{method:'POST',headers:{'Content-Type':'application/json',apikey:CFG.anon,Authorization:'Bearer '+CFG.anon,Prefer:'return=minimal'},body:JSON.stringify(body)});
@@ -595,7 +597,7 @@ function renderPainel(){
     try{var r=await fetch(CFG.url+'/rest/v1/diagnosticos?id=eq.'+encodeURIComponent(b.dataset.del),{method:'DELETE',headers:{apikey:CFG.anon,Authorization:'Bearer '+tok,Prefer:'return=minimal'}});if(!r.ok)throw 0;carregar()}catch(e){b.textContent='Não foi possível'}}});
 }
 function exportCsv(){
-  var keys=IND.map(function(i){return i.k});
+  var keys=IND.filter(function(i){return !i.priv}).map(function(i){return i.k});
   var head=['Nome','CNPJ','WhatsApp','Data'].concat(keys.map(nameOf));
   var lines=[head].concat(rowsCache.map(function(r){var ind=r.indicadores||{};return [r.nome,maskCnpj(r.cnpj),r.whatsapp?maskZap(r.whatsapp):'',new Date(r.created_at).toLocaleString('pt-BR')].concat(keys.map(function(k){var v=ind[k];if(v==null)return '';var f=BYK[k].f===pctf?v*100:v;return nf(f,2)}))}));
   var csv='﻿'+lines.map(function(l){return l.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"'}).join(';')}).join('\r\n');
